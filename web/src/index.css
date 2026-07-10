@@ -75,3 +75,27 @@ body {
 .dh-deploy-btn:hover {
   opacity: 0.9;
 }
+
+.dh-model-pick {
+  border: 1px solid var(--dh-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-0);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.dh-model-pick:hover:not(:disabled) {
+  border-color: var(--mantine-color-indigo-3);
+  background: #fff;
+}
+
+.dh-model-pick--active {
+  border-color: var(--mantine-color-indigo-5);
+  background: var(--mantine-color-indigo-0);
+}
+
+.dh-model-pick:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
