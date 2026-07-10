@@ -179,6 +179,17 @@ export default function App() {
       : "Running analysis…"
     : `Analyze with ${selectedLabel}`;
 
+  const completedTasks =
+    snapshot?.tasks.filter((task) => task.status === "completed").length ?? 0;
+  const failedTasks = snapshot?.tasks.filter((task) => task.status === "failed").length ?? 0;
+  const progressLabel = dispatching
+    ? "Workflow dispatched. Waiting for the first task update…"
+    : running
+      ? `${completedTasks} of 5 dimensions complete${
+          failedTasks ? ` · ${failedTasks} failed` : ""
+        }`
+      : null;
+
   const showGantt = snapshot?.status === "completed";
   const showBoard = !showGantt;
   const showDashboard = Boolean(snapshot?.result);
@@ -229,6 +240,11 @@ export default function App() {
                 >
                   {analyzeLabel}
                 </Button>
+                {progressLabel && (
+                  <Text size="sm" c="dimmed" ta="center">
+                    {progressLabel}
+                  </Text>
+                )}
 
                 {compareMode && (
                   <Text size="sm" c="dimmed" ta="center">
