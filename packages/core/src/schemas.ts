@@ -125,6 +125,7 @@ export type SynthesisResult = z.infer<typeof synthesisResultSchema>;
 
 export const DIMENSION_JSON_SCHEMA = {
   type: "object",
+  additionalProperties: false,
   properties: {
     dimension: { type: "string" },
     score: { type: "number" },
@@ -133,6 +134,7 @@ export const DIMENSION_JSON_SCHEMA = {
       type: "array",
       items: {
         type: "object",
+        additionalProperties: false,
         properties: {
           severity: { type: "string", enum: ["Critical", "High", "Medium"] },
           signal: { type: "string" },
@@ -148,11 +150,13 @@ export const DIMENSION_JSON_SCHEMA = {
 
 export const SYNTHESIS_JSON_SCHEMA = {
   type: "object",
+  additionalProperties: false,
   properties: {
     summary: { type: "string" },
     recommendations: { type: "array", items: { type: "string" } },
     context: {
       type: "object",
+      additionalProperties: false,
       properties: {
         deal_context: { type: "string" },
         decision_path: { type: "string" },
