@@ -1,17 +1,6 @@
 // Source for web/public/how-a-review-runs.gif — the "How a review runs" diagram.
 // Hand-coded SVG; each invocation emits one HTML frame for a given dash offset,
 // so the flow arrows animate across the 24-frame loop.
-//
-// Regenerate the GIF (needs Google Chrome + ffmpeg):
-//   mkdir -p frames
-//   for i in $(seq 0 23); do p=$(printf "%02d" $i);
-//     node scripts/architecture-diagram.mjs $i frames/f$p.html;
-//     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
-//       --disable-gpu --hide-scrollbars --window-size=1376,768 \
-//       --screenshot=frames/f$p.png "file://$PWD/frames/f$p.html"; done
-//   ffmpeg -y -framerate 20 -i frames/f%02d.png -vf "palettegen=stats_mode=full" palette.png
-//   ffmpeg -y -framerate 20 -i frames/f%02d.png -i palette.png \
-//     -lavfi "paletteuse=dither=bayer:bayer_scale=3" -loop 0 web/public/how-a-review-runs.gif
 
 const W = 1376, H = 768;
 
@@ -91,7 +80,7 @@ function frame(offset) {
         .title{fill:${C.ink};font:700 42px 'Inter','Segoe UI',Arial,sans-serif;text-anchor:middle;}
         .subtitle{fill:${C.sub};font:500 19px 'Inter','Segoe UI',Arial,sans-serif;text-anchor:middle;}
         .eyebrow{fill:${C.eyebrow};font:600 13px 'Inter','Segoe UI',Arial,sans-serif;letter-spacing:0.14em;text-anchor:middle;}
-        .wrapLabel{fill:${C.violet};font:700 20px 'Inter','Segoe UI',Arial,sans-serif;}
+        .wrapLabel{fill:${C.ink};font:700 20px 'Inter','Segoe UI',Arial,sans-serif;}
         .card{fill:${C.ink};font:700 22px 'Inter','Segoe UI',Arial,sans-serif;text-anchor:middle;}
         .body{fill:${C.body};font:500 14px 'Inter','Segoe UI',Arial,sans-serif;text-anchor:middle;}
         .heroName{fill:${C.ink};font:700 18px 'Inter','Segoe UI',Arial,sans-serif;text-anchor:middle;}
@@ -106,16 +95,15 @@ function frame(offset) {
 
     <!-- Render Workflows wrapper -->
     <g filter="url(#shadow)"><rect x="${WRAP.x}" y="${WRAP.y}" width="${WRAP.w}" height="${WRAP.h}" rx="26" fill="${C.wrapFill}" stroke="${C.wrapStroke}" stroke-width="2" stroke-dasharray="2 0" /></g>
-    ${logo("render", WRAP.x + 34, WRAP.y + 34, 24, C.violet)}
+    ${logo("render", WRAP.x + 34, WRAP.y + 34, 24, C.ink)}
     <text x="${WRAP.x + 54}" y="${WRAP.y + 41}" class="wrapLabel">Render Workflows</text>
-    <text x="${WRAP.x + WRAP.w - 24}" y="${WRAP.y + 41}" class="body" text-anchor="end">retried and resumable</text>
 
     <!-- connectors (under cards) -->
     ${fanOut}
     ${fanIn}
     ${flow(`M${BROWSER.x + BROWSER.w / 2} ${BROWSER.y + BROWSER.h} V ${API.y}`, C.purple, "aPurple")}
     ${flow(`M${API.x + API.w} ${cy(API)} C ${API.x + API.w + 40} ${cy(API)}, ${HERO.x - 40} ${cy(HERO)}, ${HERO.x} ${cy(HERO)}`, C.blue, "aBlue")}
-    ${flow(`M${REV.x + REV.w / 2} ${WRAP.y + WRAP.h} V ${MODELS.y}`, C.gold, "aGold")}
+    ${flow(`M${REV.x + REV.w / 2} ${MODELS.y} V ${WRAP.y + WRAP.h}`, C.gold, "aGold")}
 
     <!-- CLIENT -->
     <text x="${cx(BROWSER)}" y="${BROWSER.y - 14}" class="eyebrow">CLIENT</text>
@@ -125,8 +113,7 @@ function frame(offset) {
 
     <!-- API -->
     <g filter="url(#shadow)"><rect x="${API.x}" y="${API.y}" width="${API.w}" height="${API.h}" rx="16" fill="${C.card}" stroke="${C.blue}" stroke-width="2" />
-      ${logo("render", API.x + 42, API.y + 46, 22, C.violet)}
-      <text x="${cx(API) + 14}" y="${API.y + 54}" class="card">API</text>
+      <text x="${cx(API)}" y="${API.y + 54}" class="card">API</text>
       <text x="${cx(API)}" y="${API.y + 82}" class="body">starts and streams the run</text></g>
 
     <!-- analyzeOpportunity (root task) -->
