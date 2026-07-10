@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
+  Badge,
   Button,
-  Card,
   Chip,
   Collapse,
   Group,
   NumberInput,
+  Paper,
   Select,
   SimpleGrid,
   Slider,
@@ -31,6 +32,14 @@ const BOOL_SIGNALS: Array<{ key: keyof Opportunity; label: string }> = [
   { key: "competitorInDeal", label: "Competitor in deal" },
 ];
 
+function formatArr(arr: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(arr);
+}
+
 export function OpportunityForm({
   samples,
   value,
@@ -49,27 +58,53 @@ export function OpportunityForm({
     (s) => s.key as string
   );
 
+  const activeSignals = BOOL_SIGNALS.filter((s) => value[s.key] === true);
+
   return (
-    <Card withBorder padding="md">
+    <Paper className="dh-panel" p="md">
       <Stack gap="md">
-        <Group align="flex-end" wrap="nowrap">
-          <Select
-            label="Deal"
-            flex={1}
-            data={samples.map((s) => ({ value: s.id ?? s.company, label: s.company }))}
-            value={value.id ?? value.company}
-            onChange={(id) => {
-              const sample = samples.find((s) => (s.id ?? s.company) === id);
-              if (sample) onChange({ ...sample });
-            }}
-          />
-          <Button variant="subtle" onClick={() => setEditorOpen((o) => !o)}>
+        <Group justify="space-between" align="center">
+          <Text className="dh-section-title">Deal</Text>
+          <Button variant="subtle" size="compact-sm" onClick={() => setEditorOpen((o) => !o)}>
             {editorOpen ? "Hide editor" : "Edit deal"}
           </Button>
         </Group>
 
+        <Select
+          data={samples.map((s) => ({ value: s.id ?? s.company, label: s.company }))}
+          value={value.id ?? value.company}
+          onChange={(id) => {
+            const sample = samples.find((s) => (s.id ?? s.company) === id);
+            if (sample) onChange({ ...sample });
+          }}
+        />
+
+        {!editorOpen && (
+          <Group gap="xs">
+            <Badge variant="light" color="indigo">
+              {value.stage}
+            </Badge>
+            <Badge variant="light" color="gray">
+              {formatArr(value.arr)} ARR
+            </Badge>
+            <Badge variant="light" color="gray">
+              Activity {value.activityLevel}/10
+            </Badge>
+            {activeSignals.slice(0, 3).map((s) => (
+              <Badge key={s.key as string} variant="outline" color="green" size="sm">
+                {s.label}
+              </Badge>
+            ))}
+            {activeSignals.length > 3 && (
+              <Badge variant="outline" color="gray" size="sm">
+                +{activeSignals.length - 3} signals
+              </Badge>
+            )}
+          </Group>
+        )}
+
         <Collapse expanded={editorOpen}>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" pt="xs">
             <TextInput
               label="Company"
               value={value.company}
@@ -96,7 +131,9 @@ export function OpportunityForm({
               }
             />
             <Stack gap={4} style={{ gridColumn: "1 / -1" }}>
-              <Text size="sm">Activity level</Text>
+              <Text size="sm" fw={500}>
+                Activity level
+              </Text>
               <Slider
                 value={value.activityLevel}
                 onChange={(v) => set("activityLevel", v)}
@@ -107,6 +144,7 @@ export function OpportunityForm({
                   { value: 5, label: "5" },
                   { value: 10, label: "10" },
                 ]}
+                color="indigo"
               />
             </Stack>
             <NumberInput
@@ -128,7 +166,9 @@ export function OpportunityForm({
               onChange={(v) => v && set("securityReview", v)}
             />
             <Stack gap="xs" style={{ gridColumn: "1 / -1" }}>
-              <Text size="sm">Deal signals</Text>
+              <Text size="sm" fw={500}>
+                Deal signals
+              </Text>
               <Chip.Group
                 multiple
                 value={selectedSignals}
@@ -169,6 +209,6 @@ export function OpportunityForm({
           </SimpleGrid>
         </Collapse>
       </Stack>
-    </Card>
+    </Paper>
   );
 }

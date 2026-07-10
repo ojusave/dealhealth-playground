@@ -1,13 +1,5 @@
-import {
-  Anchor,
-  Badge,
-  Button,
-  Group,
-  Image,
-  Text,
-} from "@mantine/core";
-import { renderSignupUrlWithUtms } from "../lib/renderSignup";
-import { DEPLOY_URL } from "../constants";
+import { Badge, Box, Container, Group, Image, Text, Title } from "@mantine/core";
+import { GitHubLink, RenderCtas } from "./RenderCtas";
 
 export function AppHeader({
   mode,
@@ -24,42 +16,73 @@ export function AppHeader({
         : "Ready";
 
   return (
-    <Group justify="space-between" py="sm">
-      <Group gap="sm">
-        <Image src="https://render.com/favicon.ico" alt="" w={20} h={20} />
-        <Text fw={600} size="lg">
-          DealHealth
-        </Text>
+    <Box className="dh-header">
+      <Container size="lg" py="sm">
+        <Group justify="space-between" wrap="nowrap">
+          <Group gap="sm" wrap="nowrap">
+            <Image src="https://render.com/favicon.ico" alt="" w={22} h={22} />
+            <Text fw={700} size="lg" style={{ letterSpacing: "-0.02em" }}>
+              DealHealth
+            </Text>
+          </Group>
+          <Group gap="sm" wrap="nowrap" visibleFrom="sm">
+            <Text
+              component="button"
+              type="button"
+              size="sm"
+              c="dimmed"
+              style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
+              onClick={onHowItWorks}
+            >
+              How it works
+            </Text>
+            <GitHubLink />
+            <Badge variant="light" color="indigo" size="lg">
+              {modeLabel}
+            </Badge>
+            <RenderCtas signupContent="navbar_button" />
+          </Group>
+        </Group>
+      </Container>
+    </Box>
+  );
+}
+
+export function AppHero() {
+  return (
+    <Box className="dh-hero">
+      <Title order={1} mb="xs">
+        AI deal health, fan-out on Render Workflows
+      </Title>
+      <Text c="dimmed" maw={560} size="sm">
+        Pick a model, choose a sample opportunity, and watch five parallel dimension tasks run as
+        isolated workflow steps. Results merge into one scored dashboard.
+      </Text>
+      <Group mt="lg" gap="md" wrap="wrap">
+        <RenderCtas signupContent="hero_cta" showDeployImage size="sm" />
       </Group>
-      <Group gap="sm">
-        <Button variant="subtle" onClick={onHowItWorks}>
-          How it works
-        </Button>
-        <Badge variant="light" color="indigo">
-          {modeLabel}
-        </Badge>
-      </Group>
-    </Group>
+    </Box>
   );
 }
 
 export function AppFooter() {
   return (
-    <Group justify="center" gap="md" py="lg">
-      <Anchor href="https://github.com/ojusave/dealhealth-playground" target="_blank" size="sm" c="dimmed">
-        GitHub
-      </Anchor>
-      <Anchor href={DEPLOY_URL} target="_blank" size="sm" c="dimmed">
-        Deploy to Render
-      </Anchor>
-      <Anchor
-        href={renderSignupUrlWithUtms("footer_link")}
+    <Group justify="center" gap="lg" py="xl">
+      <GitHubLink />
+      <Text size="sm" c="dimmed">
+        ·
+      </Text>
+      <Text
+        component="a"
+        href="https://render.com/docs/workflows"
         target="_blank"
+        rel="noreferrer"
         size="sm"
         c="dimmed"
+        style={{ textDecoration: "none" }}
       >
-        Sign up on Render
-      </Anchor>
+        Render Workflows docs
+      </Text>
     </Group>
   );
 }

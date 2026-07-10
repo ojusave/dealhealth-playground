@@ -1,4 +1,72 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+:root {
+  --dh-page-bg: #f6f7fb;
+  --dh-surface: #ffffff;
+  --dh-border: #e5e7ef;
+  --dh-muted: #6b7280;
+  --dh-hero-gradient: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.08) 0%,
+    rgba(255, 255, 255, 0) 55%
+  );
+}
+
 body {
   margin: 0;
-  background: var(--mantine-color-body);
+  background: var(--dh-page-bg);
+  color: var(--mantine-color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.dh-page {
+  min-height: 100vh;
+}
+
+.dh-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--dh-border);
+}
+
+.dh-hero {
+  background: var(--dh-hero-gradient);
+  border: 1px solid var(--dh-border);
+  border-radius: var(--mantine-radius-lg);
+  padding: var(--mantine-spacing-xl);
+}
+
+.dh-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dh-muted);
+}
+
+.dh-panel {
+  background: var(--dh-surface);
+  border: 1px solid var(--dh-border);
+  border-radius: var(--mantine-radius-lg);
+}
+
+.dh-flow-shell .react-flow__attribution {
+  display: none;
+}
+
+.dh-flow-shell .react-flow__background {
+  background: var(--mantine-color-gray-0);
+}
+
+.dh-deploy-btn {
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 150ms ease;
+}
+
+.dh-deploy-btn:hover {
+  opacity: 0.9;
 }

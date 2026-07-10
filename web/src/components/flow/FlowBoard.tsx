@@ -7,7 +7,7 @@ import {
   type Node,
   type NodeMouseHandler,
 } from "@xyflow/react";
-import { Card, Stack, Text } from "@mantine/core";
+import { Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { DIMENSIONS } from "../../constants";
 import type { RunSnapshot, TaskNode } from "../../lib/api";
 import { FlowNode, type FlowNodeData } from "./FlowNodes";
@@ -16,26 +16,26 @@ const NODE_TYPES = { flow: FlowNode };
 
 const POSITIONS = {
   root: { x: 24, y: 168 },
-  aggregate: { x: 500, y: 168 },
-  dimensions: [32, 112, 192, 272, 352].map((y) => ({ x: 248, y })),
+  aggregate: { x: 520, y: 168 },
+  dimensions: [32, 112, 192, 272, 352].map((y) => ({ x: 268, y })),
 };
 
 function edgeStyle(status: string, animated: boolean): Partial<Edge> {
   if (status === "failed") {
     return {
       animated: false,
-      style: { stroke: "var(--mantine-color-red-6)" },
+      style: { stroke: "var(--mantine-color-red-5)", strokeWidth: 2 },
     };
   }
   if (status === "completed") {
     return {
       animated: false,
-      style: { stroke: "var(--mantine-color-green-6)" },
+      style: { stroke: "var(--mantine-color-green-5)", strokeWidth: 2 },
     };
   }
   return {
     animated,
-    style: { stroke: "var(--mantine-color-indigo-4)" },
+    style: { stroke: "var(--mantine-color-indigo-4)", strokeWidth: animated ? 2 : 1.5 },
   };
 }
 
@@ -157,8 +157,21 @@ export function FlowBoard({
       : "Each card is an isolated task run on Render Workflows. Close the tab; the run finishes anyway.";
 
   return (
-    <Card withBorder padding="md">
-      <Stack gap="sm">
+    <Paper className="dh-panel dh-flow-shell" p="md">
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-end">
+          <Stack gap={2}>
+            <Text className="dh-section-title">Workflow fan-out</Text>
+            <Title order={3} fw={600}>
+              {idle ? "Waiting for analysis" : company}
+            </Title>
+          </Stack>
+          {!idle && snapshot?.status && (
+            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+              {snapshot.status}
+            </Text>
+          )}
+        </Group>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -172,16 +185,16 @@ export function FlowBoard({
           zoomOnPinch={false}
           preventScrolling={false}
           fitView
-          fitViewOptions={{ padding: 0.25 }}
-          proOptions={{ hideAttribution: false }}
-          style={{ width: "100%", height: 400 }}
+          fitViewOptions={{ padding: 0.2 }}
+          proOptions={{ hideAttribution: true }}
+          style={{ width: "100%", height: 420, borderRadius: "var(--mantine-radius-md)" }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
         </ReactFlow>
         <Text size="sm" c="dimmed">
-          {idle ? "Run an analysis to see it fan out here." : caption}
+          {idle ? "Run an analysis to see tasks fan out in parallel." : caption}
         </Text>
       </Stack>
-    </Card>
+    </Paper>
   );
 }

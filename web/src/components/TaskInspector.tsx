@@ -1,12 +1,21 @@
 import {
+  Badge,
   Drawer,
   List,
   Stack,
   Table,
   Text,
+  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import type { TaskNode } from "../lib/api";
+
+function statusColor(status: string): string {
+  if (status === "completed") return "green";
+  if (status === "failed") return "red";
+  if (status === "running") return "indigo";
+  return "gray";
+}
 
 export function TaskInspector({
   node,
@@ -26,24 +35,30 @@ export function TaskInspector({
       opened={opened}
       onClose={onClose}
       position="right"
-      title={dimension || "Task details"}
+      title={
+        <Stack gap={2}>
+          <Text className="dh-section-title">Task inspector</Text>
+          <Title order={4}>{dimension || "Details"}</Title>
+        </Stack>
+      }
       size={mobile ? "100%" : "md"}
+      padding="lg"
     >
       {!node ? (
         <Text c="dimmed" size="sm">
           Select a dimension node to inspect its task run.
         </Text>
       ) : (
-        <Stack gap="md">
-          <Table variant="vertical" withTableBorder>
+        <Stack gap="lg">
+          <Badge size="lg" color={statusColor(node.status)} variant="light">
+            {node.status}
+          </Badge>
+
+          <Table variant="vertical" withTableBorder layout="fixed">
             <Table.Tbody>
-              <Table.Tr>
-                <Table.Th w={140}>Status</Table.Th>
-                <Table.Td>{node.status}</Table.Td>
-              </Table.Tr>
               {node.durationMs != null && (
                 <Table.Tr>
-                  <Table.Th>Duration</Table.Th>
+                  <Table.Th w={140}>Duration</Table.Th>
                   <Table.Td ff="monospace">{(node.durationMs / 1000).toFixed(1)}s</Table.Td>
                 </Table.Tr>
               )}
@@ -64,28 +79,24 @@ export function TaskInspector({
               {node.score != null && (
                 <Table.Tr>
                   <Table.Th>Score</Table.Th>
-                  <Table.Td>{node.score}</Table.Td>
+                  <Table.Td fw={600}>{node.score}</Table.Td>
                 </Table.Tr>
               )}
             </Table.Tbody>
           </Table>
 
           {node.findings && (
-            <Stack gap={4}>
-              <Text fw={600} size="sm">
-                Findings
-              </Text>
-              <Text size="sm" c="dimmed">
+            <Stack gap={6}>
+              <Text className="dh-section-title">Findings</Text>
+              <Text size="sm" lh={1.6}>
                 {node.findings}
               </Text>
             </Stack>
           )}
 
           {node.reasoning && node.reasoning.length > 0 && (
-            <Stack gap={4}>
-              <Text fw={600} size="sm">
-                Reasoning
-              </Text>
+            <Stack gap={6}>
+              <Text className="dh-section-title">Reasoning</Text>
               <List size="sm" spacing="xs">
                 {node.reasoning.map((step, i) => (
                   <List.Item key={i}>{step}</List.Item>

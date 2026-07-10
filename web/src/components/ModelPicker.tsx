@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Badge,
   Chip,
   Group,
+  Paper,
   SegmentedControl,
   Skeleton,
   Stack,
   Text,
   Tooltip,
-  Badge,
 } from "@mantine/core";
 import { PROVIDER_LABEL } from "../constants";
 import { selectableProviders, type ModelsResponse } from "../lib/api";
@@ -71,56 +72,64 @@ export function ModelPicker({
 
   if (!models) {
     return (
-      <Stack gap="sm">
-        <Skeleton height={36} radius="md" />
-        <Skeleton height={32} radius="md" />
-      </Stack>
+      <Paper className="dh-panel" p="md">
+        <Stack gap="sm">
+          <Skeleton height={14} width={80} radius="sm" />
+          <Skeleton height={36} radius="md" />
+          <Skeleton height={32} radius="md" />
+        </Stack>
+      </Paper>
     );
   }
 
   if (groups.length === 0) {
     return (
-      <Text size="sm" c="dimmed">
-        No models available. Add provider API keys on dealhealth-api.
-      </Text>
+      <Paper className="dh-panel" p="md">
+        <Text size="sm" c="dimmed">
+          No models available. Add provider API keys on dealhealth-api.
+        </Text>
+      </Paper>
     );
   }
 
   return (
-    <Stack gap="sm">
-      <SegmentedControl
-        value={provider}
-        onChange={setProvider}
-        disabled={disabled}
-        data={groups.map(([key]) => ({
-          value: key,
-          label: PROVIDER_LABEL[key] ?? key,
-        }))}
-        fullWidth
-      />
-      <Chip.Group
-        multiple={false}
-        value={value}
-        onChange={(v) => v && onChange(v)}
-      >
-        <Group gap="xs">
-          {activeGroup?.models.map((m) => (
-            <Tooltip key={m.id} label={`Tier: ${m.tier}`} withArrow>
-              <Chip value={m.id} disabled={disabled} variant="outline">
-                <Group gap={4} wrap="nowrap">
-                  {m.label}
-                  {m.isNew && (
-                    <Badge size="xs" color="indigo">
-                      New
-                    </Badge>
-                  )}
-                </Group>
-              </Chip>
-            </Tooltip>
-          ))}
-        </Group>
-      </Chip.Group>
-    </Stack>
+    <Paper className="dh-panel" p="md">
+      <Stack gap="md">
+        <Text className="dh-section-title">Model</Text>
+        <SegmentedControl
+          value={provider}
+          onChange={setProvider}
+          disabled={disabled}
+          data={groups.map(([key]) => ({
+            value: key,
+            label: PROVIDER_LABEL[key] ?? key,
+          }))}
+          fullWidth
+        />
+        <Chip.Group
+          multiple={false}
+          value={value}
+          onChange={(v) => v && onChange(v)}
+        >
+          <Group gap="xs">
+            {activeGroup?.models.map((m) => (
+              <Tooltip key={m.id} label={`Tier: ${m.tier}`} withArrow>
+                <Chip value={m.id} disabled={disabled} variant="outline" radius="md">
+                  <Group gap={4} wrap="nowrap">
+                    {m.label}
+                    {m.isNew && (
+                      <Badge size="xs" color="indigo" variant="filled">
+                        New
+                      </Badge>
+                    )}
+                  </Group>
+                </Chip>
+              </Tooltip>
+            ))}
+          </Group>
+        </Chip.Group>
+      </Stack>
+    </Paper>
   );
 }
 

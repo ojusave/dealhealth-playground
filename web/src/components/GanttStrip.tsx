@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Card, Text, Tooltip } from "@mantine/core";
+import { Group, Paper, Stack, Text } from "@mantine/core";
 import type { RunSnapshot } from "../lib/api";
 
 function barTone(score?: number, failed?: boolean): string {
@@ -9,6 +9,12 @@ function barTone(score?: number, failed?: boolean): string {
   if (score >= 45) return "atrisk";
   return "critical";
 }
+
+const LEGEND = [
+  { tone: "healthy", label: "Healthy (70+)" },
+  { tone: "atrisk", label: "At risk (45–69)" },
+  { tone: "critical", label: "Critical (<45)" },
+] as const;
 
 export function GanttStrip({ snapshot }: { snapshot: RunSnapshot }) {
   const { wallMs, computeMs, bars } = useMemo(() => {
@@ -36,20 +42,33 @@ export function GanttStrip({ snapshot }: { snapshot: RunSnapshot }) {
   if (!bars.length) return null;
 
   return (
-    <Card withBorder padding="md">
-      <Text size="sm" c="dimmed" mb="sm">
-        {(computeMs / 1000).toFixed(1)}s of compute in {(wallMs / 1000).toFixed(1)}s of wall time
-      </Text>
-      <div className="gantt-track">
-        {bars.map((b) => (
-          <Tooltip key={b.label} label={b.label} withArrow>
+    <Paper className="dh-panel" p="md">
+      <Stack gap="sm">
+        <Text className="dh-section-title">Parallelism</Text>
+        <Text size="sm" c="dimmed">
+          {(computeMs / 1000).toFixed(1)}s of compute in {(wallMs / 1000).toFixed(1)}s of wall time
+        </Text>
+        <div className="gantt-track">
+          {bars.map((b) => (
             <div
+              key={b.label}
               className={`gantt-bar gantt-bar--${b.tone}`}
               style={{ left: `${b.left}%`, width: `${b.width}%` }}
+              title={b.label}
             />
-          </Tooltip>
-        ))}
-      </div>
-    </Card>
+          ))}
+        </div>
+        <Group gap="md">
+          {LEGEND.map((item) => (
+            <Group key={item.tone} gap={6}>
+              <span className={`gantt-legend gantt-legend--${item.tone}`} />
+              <Text size="xs" c="dimmed">
+                {item.label}
+              </Text>
+            </Group>
+          ))}
+        </Group>
+      </Stack>
+    </Paper>
   );
 }

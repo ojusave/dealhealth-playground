@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Box,
   Button,
   Container,
   Divider,
+  Group,
+  SimpleGrid,
   Stack,
   Text,
   Transition,
@@ -22,7 +25,7 @@ import {
   type TaskNode,
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
-import { AppFooter, AppHeader } from "./components/AppHeader";
+import { AppFooter, AppHeader, AppHero } from "./components/AppHeader";
 import { DashboardView } from "./components/DashboardView";
 import { FlowBoard } from "./components/flow/FlowBoard";
 import { GanttStrip } from "./components/GanttStrip";
@@ -30,6 +33,7 @@ import { HowItWorksModal } from "./components/HowItWorksModal";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
+import { RenderCtas } from "./components/RenderCtas";
 import { TaskInspector } from "./components/TaskInspector";
 
 export default function App() {
@@ -173,7 +177,7 @@ export default function App() {
   const analyzeLabel = running
     ? dispatching
       ? "Dispatching to Render Workflows…"
-      : "Running…"
+      : "Running analysis…"
     : `Analyze with ${selectedLabel}`;
 
   const showGantt = snapshot?.status === "completed";
@@ -181,110 +185,132 @@ export default function App() {
   const showDashboard = Boolean(snapshot?.result);
 
   return (
-    <Container size="lg" py="xl">
-      <Stack gap="xl">
-        <AppHeader
-          mode={executionMode === "unknown" ? "unknown" : executionMode}
-          onHowItWorks={() => setShowHow(true)}
-        />
-        <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
+    <Box className="dh-page">
+      <AppHeader
+        mode={executionMode === "unknown" ? "unknown" : executionMode}
+        onHowItWorks={() => setShowHow(true)}
+      />
+      <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
 
-        {initialLoading && !models ? (
-          <LoadingSkeleton />
-        ) : (
-          <Stack gap="xl" ref={formRef}>
-            <ModelPicker
-              models={models}
-              value={modelId}
-              onChange={setModelId}
-              disabled={!allModelIds.length || running}
-            />
+      <Container size="lg" py="xl">
+        <Stack gap="xl">
+          <AppHero />
 
-            {opportunity && (
-              <OpportunityForm samples={samples} value={opportunity} onChange={setOpportunity} />
-            )}
+          <Group hiddenFrom="sm" justify="center">
+            <RenderCtas signupContent="navbar_button" />
+          </Group>
 
-            <Button
-              size="lg"
-              fullWidth
-              loading={running}
-              disabled={!canAnalyze}
-              onClick={() => void analyze()}
-            >
-              {analyzeLabel}
-            </Button>
+          {initialLoading && !models ? (
+            <LoadingSkeleton />
+          ) : (
+            <Box ref={formRef}>
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+              <Stack gap="lg">
+                <ModelPicker
+                  models={models}
+                  value={modelId}
+                  onChange={setModelId}
+                  disabled={!allModelIds.length || running}
+                />
 
-            {compareMode && (
-              <Text size="sm" c="dimmed">
-                Pick another model, then run analyze again.
-              </Text>
-            )}
+                {opportunity && (
+                  <OpportunityForm
+                    samples={samples}
+                    value={opportunity}
+                    onChange={setOpportunity}
+                  />
+                )}
 
-            {rateLimitAlert && (
-              <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
-                {rateLimitAlert.message}
-                {rateLimitAlert.hint && (
-                  <Text size="sm" mt="xs" c="dimmed">
-                    {rateLimitAlert.hint}
+                <Button
+                  size="lg"
+                  fullWidth
+                  loading={running}
+                  disabled={!canAnalyze}
+                  onClick={() => void analyze()}
+                >
+                  {analyzeLabel}
+                </Button>
+
+                {compareMode && (
+                  <Text size="sm" c="dimmed" ta="center">
+                    Pick another model, then run analyze again.
                   </Text>
                 )}
-              </Alert>
-            )}
-          </Stack>
-        )}
 
-        <Stack gap="md">
-          <Transition
-            mounted={showBoard}
-            transition="fade"
-            duration={200}
-            timingFunction="ease"
-          >
-            {(styles) => (
-              <div style={styles}>
-                <FlowBoard
-                  snapshot={snapshot}
-                  idle={!snapshot}
-                  company={opportunity?.company ?? "Deal"}
-                  onSelectTask={handleSelectTask}
-                />
-              </div>
-            )}
-          </Transition>
+                {catalogError && !running && (
+                  <Alert color="yellow" variant="light" title={catalogError.title}>
+                    {catalogError.message}
+                  </Alert>
+                )}
 
-          <Transition
-            mounted={showGantt && Boolean(snapshot)}
-            transition="fade"
-            duration={200}
-            timingFunction="ease"
-          >
-            {(styles) => (
-              <div style={styles}>{snapshot && <GanttStrip snapshot={snapshot} />}</div>
-            )}
-          </Transition>
-        </Stack>
+                {rateLimitAlert && (
+                  <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
+                    {rateLimitAlert.message}
+                    {rateLimitAlert.hint && (
+                      <Text size="sm" mt="xs" c="dimmed">
+                        {rateLimitAlert.hint}
+                      </Text>
+                    )}
+                  </Alert>
+                )}
+              </Stack>
 
-        <TaskInspector
-          node={selectedTask}
-          dimension={selectedDimension}
-          opened={inspectorOpen}
-          onClose={() => setInspectorOpen(false)}
-        />
+              <Stack gap="md">
+                <Transition
+                  mounted={showBoard}
+                  transition="fade"
+                  duration={200}
+                  timingFunction="ease"
+                >
+                  {(styles) => (
+                    <div style={styles}>
+                      <FlowBoard
+                        snapshot={snapshot}
+                        idle={!snapshot}
+                        company={opportunity?.company ?? "Deal"}
+                        onSelectTask={handleSelectTask}
+                      />
+                    </div>
+                  )}
+                </Transition>
 
-        {showDashboard && snapshot?.result && (
-          <DashboardView
-            data={snapshot.result}
-            onReanalyze={scrollToForm}
-            onCompare={() => {
-              setCompareMode(true);
-              scrollToForm();
-            }}
+                <Transition
+                  mounted={showGantt && Boolean(snapshot)}
+                  transition="fade"
+                  duration={200}
+                  timingFunction="ease"
+                >
+                  {(styles) => (
+                    <div style={styles}>{snapshot && <GanttStrip snapshot={snapshot} />}</div>
+                  )}
+                </Transition>
+              </Stack>
+            </SimpleGrid>
+            </Box>
+          )}
+
+          <TaskInspector
+            node={selectedTask}
+            dimension={selectedDimension}
+            opened={inspectorOpen}
+            onClose={() => setInspectorOpen(false)}
           />
-        )}
 
-        <Divider />
-        <AppFooter />
-      </Stack>
-    </Container>
+          {showDashboard && snapshot?.result && (
+            <DashboardView
+              data={snapshot.result}
+              onReanalyze={scrollToForm}
+              onCompare={() => {
+                setCompareMode(true);
+                scrollToForm();
+              }}
+            />
+          )}
+
+          <Divider />
+          <AppFooter />
+        </Stack>
+      </Container>
+    </Box>
   );
 }

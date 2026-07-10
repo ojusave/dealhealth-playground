@@ -16,23 +16,24 @@ export type FlowNodeData = {
 function statusMeta(status: string, attempt: number, score?: number) {
   if (status === "running") {
     return attempt > 1
-      ? { label: `Retry ${attempt}`, color: "yellow" as const, showLoader: true }
-      : { label: "Running", color: "indigo" as const, showLoader: true };
+      ? { label: `Retry ${attempt}`, color: "yellow" as const, showLoader: true, accent: "#eab308" }
+      : { label: "Running", color: "indigo" as const, showLoader: true, accent: "#6366f1" };
   }
   if (status === "completed") {
     return {
       label: score != null ? String(score) : "Done",
       color: "green" as const,
       showLoader: false,
+      accent: "#16a34a",
     };
   }
   if (status === "failed") {
-    return { label: "Failed", color: "red" as const, showLoader: false };
+    return { label: "Failed", color: "red" as const, showLoader: false, accent: "#dc2626" };
   }
   if (attempt > 1) {
-    return { label: `Retry ${attempt}`, color: "yellow" as const, showLoader: false };
+    return { label: `Retry ${attempt}`, color: "yellow" as const, showLoader: false, accent: "#eab308" };
   }
-  return { label: "Queued", color: "gray" as const, showLoader: false };
+  return { label: "Queued", color: "gray" as const, showLoader: false, accent: "#9ca3af" };
 }
 
 function useElapsed(startedAt?: string, active?: boolean): string | null {
@@ -57,21 +58,29 @@ function FlowNodeInner({ data }: NodeProps) {
     <Paper
       withBorder
       p="sm"
-      w={d.kind === "root" || d.kind === "aggregate" ? 120 : 148}
-      style={{ opacity: d.dimmed ? 0.45 : 1 }}
+      w={d.kind === "root" || d.kind === "aggregate" ? 128 : 156}
+      shadow="sm"
+      style={{
+        opacity: d.dimmed ? 0.5 : 1,
+        borderLeft: `3px solid ${meta.accent}`,
+        transition: "opacity 200ms ease, box-shadow 200ms ease",
+      }}
     >
       {d.kind !== "root" && <Handle type="target" position={Position.Left} />}
-      <Text size="sm" fw={600} lineClamp={1}>
+      <Text size="xs" c="dimmed" tt="uppercase" fw={600} style={{ letterSpacing: "0.04em" }}>
+        {d.kind === "dimension" ? "Dimension" : d.kind}
+      </Text>
+      <Text size="sm" fw={600} lineClamp={1} mt={2}>
         {d.kind === "dimension" ? short : d.label}
       </Text>
-      <Group gap={6} mt={6} wrap="nowrap">
+      <Group gap={6} mt={8} wrap="nowrap">
         <Badge size="sm" color={meta.color} variant="light">
           {meta.label}
         </Badge>
         {meta.showLoader && <Loader size="xs" color="indigo" />}
       </Group>
       {elapsed && (
-        <Text size="xs" ff="monospace" c="dimmed" mt={4}>
+        <Text size="xs" ff="monospace" c="dimmed" mt={6}>
           {elapsed}
         </Text>
       )}
