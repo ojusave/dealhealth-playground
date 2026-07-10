@@ -1,40 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-bg text-ink font-sans antialiased text-label-14;
-  }
-}
-
-@layer components {
-  .field {
-    @apply h-9 w-full rounded-md border border-border bg-surface px-3 text-label-14 text-ink
-      focus:border-ink/40 focus:outline-none focus:ring-1 focus:ring-ink/20;
-  }
-
-  .btn {
-    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md px-4 text-label-14 font-medium
-      transition-colors disabled:cursor-not-allowed disabled:opacity-40;
-  }
-
-  .btn-primary {
-    @apply btn bg-ink text-bg hover:bg-ink/90;
-  }
-
-  .btn-secondary {
-    @apply btn border border-border bg-surface text-ink hover:border-ink/30;
-  }
-
-  .status-dot {
-    @apply h-1.5 w-1.5 shrink-0 rounded-full;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+body {
+  margin: 0;
+  background: var(--mantine-color-body);
 }

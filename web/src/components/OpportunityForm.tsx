@@ -1,9 +1,35 @@
 import { useState } from "react";
+import {
+  Button,
+  Card,
+  Chip,
+  Collapse,
+  Group,
+  NumberInput,
+  Select,
+  SimpleGrid,
+  Slider,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+} from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import dayjs from "dayjs";
 import type { Opportunity } from "../lib/api";
 
 const STAGES = ["Discovery", "Evaluation", "Proposal", "Negotiation", "Closing"];
 const PILOT = ["not started", "in progress", "successful", "failed"];
 const SECURITY = ["not started", "in progress", "complete"];
+
+const BOOL_SIGNALS: Array<{ key: keyof Opportunity; label: string }> = [
+  { key: "budgetConfirmed", label: "Budget confirmed" },
+  { key: "economicBuyerIdentified", label: "Economic buyer" },
+  { key: "execSponsorEngaged", label: "Exec sponsor" },
+  { key: "discoveryComplete", label: "Discovery complete" },
+  { key: "mutualActionPlan", label: "Mutual action plan" },
+  { key: "competitorInDeal", label: "Competitor in deal" },
+];
 
 export function OpportunityForm({
   samples,
@@ -14,136 +40,135 @@ export function OpportunityForm({
   value: Opportunity;
   onChange: (o: Opportunity) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const set = <K extends keyof Opportunity>(key: K, v: Opportunity[K]) =>
     onChange({ ...value, [key]: v });
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <select
-          className="field min-w-0 flex-1"
-          value={value.id ?? ""}
-          aria-label="Opportunity"
-          onChange={(e) => {
-            const sample = samples.find((s) => s.id === e.target.value);
-            if (sample) onChange({ ...sample });
-          }}
-        >
-          {samples.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.company}
-            </option>
-          ))}
-        </select>
-        <button type="button" onClick={() => setOpen(!open)} className="btn-secondary shrink-0 px-3">
-          {open ? "Done" : "Edit"}
-        </button>
-      </div>
+  const selectedSignals = BOOL_SIGNALS.filter((s) => value[s.key] === true).map(
+    (s) => s.key as string
+  );
 
-      {open && (
-        <div className="grid gap-3 rounded-md border border-border bg-surface p-4 sm:grid-cols-2">
-          <Field label="Company" value={value.company} onChange={(v) => set("company", v)} />
-          <Field label="Stage" asSelect options={STAGES} value={value.stage} onChange={(v) => set("stage", v)} />
-          <Field label="ARR" type="number" value={String(value.arr)} onChange={(v) => set("arr", Number(v))} />
-          <Field label="Close date" value={value.expectedCloseDate} onChange={(v) => set("expectedCloseDate", v)} />
-          <Field
-            label="Activity"
-            type="range"
-            min={0}
-            max={10}
-            value={String(value.activityLevel)}
-            onChange={(v) => set("activityLevel", Number(v))}
+  return (
+    <Card withBorder padding="md">
+      <Stack gap="md">
+        <Group align="flex-end" wrap="nowrap">
+          <Select
+            label="Deal"
+            flex={1}
+            data={samples.map((s) => ({ value: s.id ?? s.company, label: s.company }))}
+            value={value.id ?? value.company}
+            onChange={(id) => {
+              const sample = samples.find((s) => (s.id ?? s.company) === id);
+              if (sample) onChange({ ...sample });
+            }}
           />
-          <Field
-            label="Days idle"
-            type="number"
-            value={String(value.daysSinceLastTouch)}
-            onChange={(v) => set("daysSinceLastTouch", Number(v))}
-          />
-          <Toggle label="Budget" checked={value.budgetConfirmed} onChange={(v) => set("budgetConfirmed", v)} />
-          <Toggle label="Buyer" checked={value.economicBuyerIdentified} onChange={(v) => set("economicBuyerIdentified", v)} />
-          <Toggle label="Sponsor" checked={value.execSponsorEngaged} onChange={(v) => set("execSponsorEngaged", v)} />
-          <Field label="Pilot" asSelect options={PILOT} value={value.pilotStatus} onChange={(v) => set("pilotStatus", v)} />
-          <Field label="Security" asSelect options={SECURITY} value={value.securityReview} onChange={(v) => set("securityReview", v)} />
-          <Toggle label="Discovery" checked={value.discoveryComplete} onChange={(v) => set("discoveryComplete", v)} />
-          <Toggle label="MAP" checked={value.mutualActionPlan} onChange={(v) => set("mutualActionPlan", v)} />
-          <Toggle label="Competitor" checked={value.competitorInDeal} onChange={(v) => set("competitorInDeal", v)} />
-          <label className="sm:col-span-2">
-            <span className="mb-1.5 block text-label-13 text-muted">Notes</span>
-            <textarea
-              className="field min-h-[72px] resize-y"
-              maxLength={500}
-              value={value.notes}
-              onChange={(e) => set("notes", e.target.value)}
+          <Button variant="subtle" onClick={() => setEditorOpen((o) => !o)}>
+            {editorOpen ? "Hide editor" : "Edit deal"}
+          </Button>
+        </Group>
+
+        <Collapse expanded={editorOpen}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <TextInput
+              label="Company"
+              value={value.company}
+              onChange={(e) => set("company", e.currentTarget.value)}
             />
-          </label>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  asSelect,
-  options,
-  min,
-  max,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  asSelect?: boolean;
-  options?: string[];
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-label-13 text-muted">{label}</span>
-      {asSelect ? (
-        <select className="field" value={value} onChange={(e) => onChange(e.target.value)}>
-          {options?.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      ) : type === "range" ? (
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full accent-ink"
-        />
-      ) : (
-        <input type={type} className="field" value={value} onChange={(e) => onChange(e.target.value)} />
-      )}
-    </label>
-  );
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex h-9 cursor-pointer items-center gap-2 text-label-13 text-muted">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-ink" />
-      {label}
-    </label>
+            <Select
+              label="Stage"
+              data={STAGES}
+              value={value.stage}
+              onChange={(v) => v && set("stage", v)}
+            />
+            <NumberInput
+              label="ARR"
+              value={value.arr}
+              onChange={(v) => set("arr", Number(v) || 0)}
+              thousandSeparator=","
+              min={0}
+            />
+            <DatePickerInput
+              label="Expected close date"
+              value={value.expectedCloseDate ? dayjs(value.expectedCloseDate).toDate() : null}
+              onChange={(d) =>
+                set("expectedCloseDate", d ? dayjs(d).format("YYYY-MM-DD") : "")
+              }
+            />
+            <Stack gap={4} style={{ gridColumn: "1 / -1" }}>
+              <Text size="sm">Activity level</Text>
+              <Slider
+                value={value.activityLevel}
+                onChange={(v) => set("activityLevel", v)}
+                min={0}
+                max={10}
+                marks={[
+                  { value: 0, label: "0" },
+                  { value: 5, label: "5" },
+                  { value: 10, label: "10" },
+                ]}
+              />
+            </Stack>
+            <NumberInput
+              label="Days since last touch"
+              value={value.daysSinceLastTouch}
+              onChange={(v) => set("daysSinceLastTouch", Number(v) || 0)}
+              min={0}
+            />
+            <Select
+              label="Pilot status"
+              data={PILOT}
+              value={value.pilotStatus}
+              onChange={(v) => v && set("pilotStatus", v)}
+            />
+            <Select
+              label="Security review"
+              data={SECURITY}
+              value={value.securityReview}
+              onChange={(v) => v && set("securityReview", v)}
+            />
+            <Stack gap="xs" style={{ gridColumn: "1 / -1" }}>
+              <Text size="sm">Deal signals</Text>
+              <Chip.Group
+                multiple
+                value={selectedSignals}
+                onChange={(keys) => {
+                  onChange({
+                    ...value,
+                    budgetConfirmed: keys.includes("budgetConfirmed"),
+                    economicBuyerIdentified: keys.includes("economicBuyerIdentified"),
+                    execSponsorEngaged: keys.includes("execSponsorEngaged"),
+                    discoveryComplete: keys.includes("discoveryComplete"),
+                    mutualActionPlan: keys.includes("mutualActionPlan"),
+                    competitorInDeal: keys.includes("competitorInDeal"),
+                  });
+                }}
+              >
+                <Group gap="xs">
+                  {BOOL_SIGNALS.map((s) => (
+                    <Chip key={s.key as string} value={s.key as string} variant="outline">
+                      {s.label}
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </Stack>
+            <Stack gap={4} style={{ gridColumn: "1 / -1" }}>
+              <Textarea
+                label="Notes"
+                autosize
+                minRows={3}
+                maxLength={500}
+                value={value.notes}
+                onChange={(e) => set("notes", e.currentTarget.value)}
+              />
+              <Text size="xs" c="dimmed" ta="right">
+                {value.notes.length}/500
+              </Text>
+            </Stack>
+          </SimpleGrid>
+        </Collapse>
+      </Stack>
+    </Card>
   );
 }

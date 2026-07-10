@@ -1,18 +1,32 @@
 import { useState } from "react";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Accordion,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Collapse,
+  Group,
+  List,
+  RingProgress,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+} from "@mantine/core";
+import { BarChart } from "@mantine/charts";
 import type { Dashboard } from "../lib/api";
-import { Badge } from "./Chrome";
 
-function scoreColor(status: string): string {
-  if (status === "Healthy") return "#50e3c2";
-  if (status === "At Risk") return "#f5a623";
-  return "#ee0000";
+function statusColor(status: string): string {
+  if (status === "Healthy") return "green";
+  if (status === "At Risk") return "yellow";
+  return "red";
 }
 
-function barColor(score: number): string {
-  if (score >= 70) return "#50e3c2";
-  if (score >= 45) return "#f5a623";
-  return "#ee0000";
+function scoreBandColor(score: number): string {
+  if (score >= 70) return "green.6";
+  if (score >= 45) return "yellow.6";
+  return "red.6";
 }
 
 export function DashboardView({
@@ -24,108 +38,185 @@ export function DashboardView({
   onReanalyze: () => void;
   onCompare: () => void;
 }) {
-  const [reasoningOpen, setReasoningOpen] = useState(false);
-  const chartData = data.dimensions.map((d, i) => ({ name: d.name, score: d.score, idx: i }));
+  const [activeDim, setActiveDim] = useState<number | null>(null);
+  const chartData = data.dimensions.map((d) => ({
+    dimension: d.name,
+    score: d.score,
+    findings: d.findings,
+    failed: d.failed,
+  }));
+
+  const ringColor = statusColor(data.status);
 
   return (
-    <section className="space-y-6 border-t border-border pt-8">
+    <Stack gap="xl" mt="xl">
       {data.meta.partial && (
-        <p className="text-label-13 text-atrisk">Partial result. Some dimensions failed.</p>
+        <Alert color="yellow" variant="light" title="Partial results">
+          Some dimensions failed. The scores below reflect only the tasks that completed.
+        </Alert>
       )}
 
-      <div className="flex items-baseline gap-6">
-        <span
-          className="font-mono text-5xl font-semibold tabular-nums tracking-tight"
-          style={{ color: scoreColor(data.status) }}
-        >
-          {data.overall_score}
-        </span>
-        <div>
-          <p className="text-lg font-medium">{data.status}</p>
-          <p className="mt-1 text-label-13 text-muted">
-            {data.meta.modelLabel} · {(data.meta.durationMs / 1000).toFixed(1)}s
-          </p>
-        </div>
-      </div>
+      <Card withBorder padding="lg">
+        <Group align="center" gap="xl" wrap="wrap">
+          <RingProgress
+            size={140}
+            thickness={14}
+            roundCaps
+            sections={[{ value: data.overall_score, color: ringColor }]}
+            label={
+              <Text ta="center" size="xl" fw={700}>
+                {data.overall_score}
+              </Text>
+            }
+          />
+          <Stack gap="xs">
+            <Badge size="lg" color={ringColor} variant="light">
+              {data.status}
+            </Badge>
+            <Text c="dimmed" size="sm">
+              {data.meta.modelLabel} · {(data.meta.durationMs / 1000).toFixed(1)}s
+            </Text>
+          </Stack>
+        </Group>
+      </Card>
 
-      <p className="max-w-2xl text-copy-14 text-muted">{data.summary}</p>
+      <Text size="sm" maw={640}>
+        {data.summary}
+      </Text>
 
-      <div className="h-48 rounded-md border border-border p-3">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 8 }}>
-            <XAxis type="number" domain={[0, 100]} hide />
-            <YAxis type="category" dataKey="name" width={120} tick={{ fill: "#888", fontSize: 12 }} />
-            <Tooltip
-              contentStyle={{
-                background: "#111",
-                border: "1px solid #333",
-                borderRadius: 6,
-                fontSize: 13,
-              }}
-            />
-            <Bar dataKey="score" radius={[0, 4, 4, 0]}>
-              {chartData.map((entry) => (
-                <Cell key={entry.idx} fill={barColor(entry.score)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <Card withBorder padding="md">
+        <BarChart
+          h={220}
+          data={chartData}
+          dataKey="dimension"
+          orientation="vertical"
+          yAxisProps={{ width: 140 }}
+          series={[{ name: "score", color: "indigo.6" }]}
+          getBarColor={(value) => scoreBandColor(value)}
+        />
+        <Stack gap="xs" mt="md">
+          <Text size="sm" c="dimmed">
+            Select a dimension to read findings
+          </Text>
+          <Group gap="xs">
+            {chartData.map((d, idx) => (
+              <Button
+                key={d.dimension}
+                size="compact-sm"
+                variant={activeDim === idx ? "filled" : "light"}
+                onClick={() => setActiveDim(idx)}
+              >
+                {d.dimension}
+              </Button>
+            ))}
+          </Group>
+        </Stack>
+        <Collapse expanded={activeDim != null}>
+          {activeDim != null && chartData[activeDim] && (
+            <Text size="sm" c="dimmed" mt="md">
+              {chartData[activeDim].findings}
+            </Text>
+          )}
+        </Collapse>
+      </Card>
 
       {data.risks.length > 0 && (
-        <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-label-13">
-            <tbody>
-              {data.risks.map((r, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <td className="px-3 py-2">
-                    <Badge tone={r.severity.toLowerCase()}>{r.severity}</Badge>
-                  </td>
-                  <td className="px-3 py-2 font-medium">{r.signal}</td>
-                  <td className="px-3 py-2 text-muted">{r.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <ul className="space-y-2 text-copy-14 text-muted">
-        {data.recommendations.map((r, i) => (
-          <li key={i}>{r}</li>
-        ))}
-      </ul>
-
-      <button
-        type="button"
-        onClick={() => setReasoningOpen(!reasoningOpen)}
-        className="text-label-13 text-muted hover:text-ink"
-      >
-        {reasoningOpen ? "Hide reasoning" : "Show reasoning"}
-      </button>
-      {reasoningOpen && (
-        <div className="space-y-2">
-          {data.reasoning.map((r) => (
-            <div key={r.dimension} className="rounded-md border border-border p-3 text-label-13">
-              <p className="font-medium">{r.dimension}</p>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-muted">
-                {r.steps.map((s, i) => (
-                  <li key={i}>{s}</li>
+        <Card withBorder padding={0}>
+          <Table.ScrollContainer minWidth={480}>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Severity</Table.Th>
+                  <Table.Th>Signal</Table.Th>
+                  <Table.Th>Description</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.risks.map((r, i) => (
+                  <Table.Tr key={i}>
+                    <Table.Td>
+                      <Badge
+                        variant="light"
+                        color={
+                          r.severity.toLowerCase() === "high"
+                            ? "red"
+                            : r.severity.toLowerCase() === "medium"
+                              ? "yellow"
+                              : "gray"
+                        }
+                      >
+                        {r.severity}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>{r.signal}</Table.Td>
+                    <Table.Td c="dimmed">{r.description}</Table.Td>
+                  </Table.Tr>
                 ))}
-              </ol>
-            </div>
-          ))}
-        </div>
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Card>
       )}
 
-      <div className="flex gap-2">
-        <button type="button" onClick={onReanalyze} className="btn-secondary">
+      <Card withBorder padding="md">
+        <Text fw={600} mb="sm">
+          Recommendations
+        </Text>
+        <List spacing="xs" size="sm">
+          {data.recommendations.map((r, i) => (
+            <List.Item key={i}>{r}</List.Item>
+          ))}
+        </List>
+      </Card>
+
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+        <Card withBorder padding="md">
+          <Text fw={600} size="sm" mb="xs">
+            Deal context
+          </Text>
+          <Text size="sm" c="dimmed">
+            {data.context.deal_context}
+          </Text>
+        </Card>
+        <Card withBorder padding="md">
+          <Text fw={600} size="sm" mb="xs">
+            Decision path
+          </Text>
+          <Text size="sm" c="dimmed">
+            {data.context.decision_path}
+          </Text>
+        </Card>
+        <Card withBorder padding="md">
+          <Text fw={600} size="sm" mb="xs">
+            Validation scope
+          </Text>
+          <Text size="sm" c="dimmed">
+            {data.context.validation_scope}
+          </Text>
+        </Card>
+      </SimpleGrid>
+
+      <Accordion variant="separated">
+        {data.reasoning.map((r) => (
+          <Accordion.Item key={r.dimension} value={r.dimension}>
+            <Accordion.Control>{r.dimension}</Accordion.Control>
+            <Accordion.Panel>
+              <List size="sm" spacing="xs">
+                {r.steps.map((s, i) => (
+                  <List.Item key={i}>{s}</List.Item>
+                ))}
+              </List>
+            </Accordion.Panel>
+          </Accordion.Item>
+        ))}
+      </Accordion>
+
+      <Group>
+        <Button variant="default" onClick={onReanalyze}>
           Re-analyze
-        </button>
-        <button type="button" onClick={onCompare} className="btn-primary">
-          Compare models
-        </button>
-      </div>
-    </section>
+        </Button>
+        <Button onClick={onCompare}>Run with another model</Button>
+      </Group>
+    </Stack>
   );
 }

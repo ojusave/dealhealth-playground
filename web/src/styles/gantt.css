@@ -1,0 +1,30 @@
+.gantt-track {
+  position: relative;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-1);
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 0.25rem;
+  height: 1.5rem;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.gantt-bar--healthy {
+  background: var(--mantine-color-green-6);
+}
+
+.gantt-bar--atrisk {
+  background: var(--mantine-color-yellow-6);
+}
+
+.gantt-bar--critical {
+  background: var(--mantine-color-red-6);
+}
+
+.gantt-bar--neutral {
+  background: var(--mantine-color-gray-5);
+}

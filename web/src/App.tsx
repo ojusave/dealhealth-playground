@@ -1,53 +1,88 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
+  Button,
+  Container,
+  Divider,
+  Stack,
+  Text,
+  Transition,
+} from "@mantine/core";
+import {
+  catalogIssues,
   fetchModels,
   fetchSamples,
+  selectableProviders,
   startAnalysis,
   subscribeRun,
+  type AppError,
   type ModelsResponse,
   type Opportunity,
   type RunSnapshot,
   type TaskNode,
 } from "./lib/api";
+import { notifyError, notifyRateLimit } from "./lib/notify";
+import { AppFooter, AppHeader } from "./components/AppHeader";
 import { DashboardView } from "./components/DashboardView";
-import { renderSignupUrlWithUtms } from "./lib/renderSignup";
-import { FanOutBoard, FanOutBoardIdle, RunTimeline, TaskInspector } from "./components/FanOutBoard";
-import { ModelPicker, usePersistedModel } from "./components/ModelPicker";
+import { FlowBoard } from "./components/flow/FlowBoard";
+import { GanttStrip } from "./components/GanttStrip";
+import { HowItWorksModal } from "./components/HowItWorksModal";
+import { LoadingSkeleton } from "./components/LoadingSkeleton";
+import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
-import { Header, HowItWorksModal } from "./components/Chrome";
-
-const GITHUB_URL = "https://github.com/ojusave/dealhealth-playground";
-const DEPLOY_URL =
-  "https://render.com/deploy?repo=https://github.com/ojusave/dealhealth-playground";
+import { TaskInspector } from "./components/TaskInspector";
 
 export default function App() {
   const [models, setModels] = useState<ModelsResponse | null>(null);
+  const [catalogError, setCatalogError] = useState<AppError | null>(null);
+  const [rateLimitAlert, setRateLimitAlert] = useState<AppError | null>(null);
   const [samples, setSamples] = useState<Opportunity[]>([]);
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
+  const [selectedDimension, setSelectedDimension] = useState("");
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [dispatching, setDispatching] = useState(false);
   const [showHow, setShowHow] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const formRef = useRef<HTMLDivElement>(null);
+  const notifiedRunError = useRef<string | null>(null);
 
-  const allModelIds = useMemo(
-    () =>
-      models
-        ? Object.values(models.providers).flatMap((p) => p.models.map((m) => m.id))
-        : [],
+  const availableModels = useMemo(
+    () => (models ? selectableProviders(models).flatMap(([, p]) => p.models) : []),
     [models]
   );
+  const allModelIds = useMemo(() => availableModels.map((m) => m.id), [availableModels]);
+  const [modelId, setModelId] = usePersistedModel(models?.defaultModelId ?? "", allModelIds);
+  const canAnalyze = Boolean(opportunity && allModelIds.length > 0 && !running);
+  const selectedLabel = modelLabel(models, modelId);
 
-  const [modelId, setModelId] = usePersistedModel(
-    models?.defaultModelId ?? "gpt-5.6-terra",
-    allModelIds
-  );
+  const executionMode = snapshot?.mode ?? (models ? "workflows" : "unknown");
 
   useEffect(() => {
     const loadModels = () => {
-      void fetchModels().then(setModels).catch(() => setError("Could not load models."));
+      void fetchModels()
+        .then((data) => {
+          setModels(data);
+          const issue = catalogIssues(data);
+          setCatalogError(issue);
+          if (issue) notifyError(issue);
+        })
+        .catch((err: AppError) => {
+          const error =
+            err?.title
+              ? err
+              : {
+                  title: "Could not load models",
+                  message: "The model catalog request failed.",
+                  hint: "Check VITE_API_BASE_URL and dealhealth-api health.",
+                };
+          setCatalogError(error);
+          notifyError(error);
+        })
+        .finally(() => setInitialLoading(false));
     };
     loadModels();
     const id = setInterval(loadModels, 60_000);
@@ -60,112 +95,196 @@ export default function App() {
         setSamples(s);
         setOpportunity(s[1] ?? s[0]);
       })
-      .catch(() => setError("Could not load samples."));
+      .catch((err: AppError) => {
+        const error =
+          err?.title
+            ? err
+            : {
+                title: "Could not load samples",
+                message: "Sample opportunities failed to load.",
+              };
+        setCatalogError(error);
+        notifyError(error);
+      });
   }, []);
 
   const analyze = useCallback(async () => {
-    if (!opportunity || running) return;
-    setError(null);
+    if (!canAnalyze || !opportunity) return;
+    setRateLimitAlert(null);
+    setDispatching(true);
     setRunning(true);
     setSnapshot(null);
     setSelectedTask(null);
+    setSelectedDimension("");
+    setInspectorOpen(false);
     setCompareMode(false);
+    notifiedRunError.current = null;
+
     try {
       const { runId } = await startAnalysis(opportunity, modelId);
+      setDispatching(false);
       subscribeRun(
         runId,
         (snap) => {
           setSnapshot(snap);
           if (snap.status === "completed" || snap.status === "failed") setRunning(false);
         },
-        (msg) => {
-          setError(msg);
+        (err) => {
+          if (notifiedRunError.current !== err.message) {
+            notifiedRunError.current = err.message;
+            notifyError(err);
+          }
           setRunning(false);
+          setDispatching(false);
         }
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start analysis");
+      const error = (err as AppError)?.title
+        ? (err as AppError)
+        : {
+            title: "Analysis did not start",
+            message: err instanceof Error ? err.message : "Unknown error",
+          };
+      if (error.message.toLowerCase().includes("rate") || error.hint?.includes("minutes")) {
+        setRateLimitAlert({
+          title: "Rate limit reached",
+          message:
+            error.message ||
+            "This public demo allows 8 analyses per 10 minutes.",
+          hint: error.hint ?? "Try again in a few minutes.",
+        });
+        notifyRateLimit(error.message, error.hint);
+      } else {
+        notifyError(error);
+      }
       setRunning(false);
+      setDispatching(false);
     }
-  }, [opportunity, modelId, running]);
+  }, [canAnalyze, opportunity, modelId]);
 
   const scrollToForm = () => formRef.current?.scrollIntoView({ behavior: "smooth" });
 
-  return (
-    <div className="flex min-h-screen flex-col">
-      <Header
-        onHowItWorks={() => setShowHow(true)}
-        githubUrl={GITHUB_URL}
-        deployUrl={DEPLOY_URL}
-        signupUrl={renderSignupUrlWithUtms("navbar_button")}
-      />
-      <HowItWorksModal open={showHow} onClose={() => setShowHow(false)} />
+  const handleSelectTask = (task: TaskNode | null, dimension: string) => {
+    setSelectedTask(task);
+    setSelectedDimension(dimension);
+    setInspectorOpen(Boolean(task || dimension));
+  };
 
-      <main className="mx-auto w-full max-w-content flex-1 px-4 py-10">
-        <section ref={formRef} className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
-            <ModelPicker models={models} value={modelId} onChange={setModelId} />
+  const analyzeLabel = running
+    ? dispatching
+      ? "Dispatching to Render Workflows…"
+      : "Running…"
+    : `Analyze with ${selectedLabel}`;
+
+  const showGantt = snapshot?.status === "completed";
+  const showBoard = !showGantt;
+  const showDashboard = Boolean(snapshot?.result);
+
+  return (
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
+        <AppHeader
+          mode={executionMode === "unknown" ? "unknown" : executionMode}
+          onHowItWorks={() => setShowHow(true)}
+        />
+        <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
+
+        {initialLoading && !models ? (
+          <LoadingSkeleton />
+        ) : (
+          <Stack gap="xl" ref={formRef}>
+            <ModelPicker
+              models={models}
+              value={modelId}
+              onChange={setModelId}
+              disabled={!allModelIds.length || running}
+            />
+
             {opportunity && (
               <OpportunityForm samples={samples} value={opportunity} onChange={setOpportunity} />
             )}
-            <button
-              type="button"
-              disabled={running || !opportunity}
+
+            <Button
+              size="lg"
+              fullWidth
+              loading={running}
+              disabled={!canAnalyze}
               onClick={() => void analyze()}
-              className="btn-primary w-full sm:w-auto sm:min-w-[7rem]"
             >
-              {running ? "Running…" : "Analyze"}
-            </button>
-          </div>
+              {analyzeLabel}
+            </Button>
 
-          {compareMode && (
-            <p className="text-label-13 text-muted">Pick another model, then Analyze.</p>
-          )}
-          {error && <p className="text-copy-14 text-critical">{error}</p>}
-        </section>
+            {compareMode && (
+              <Text size="sm" c="dimmed">
+                Pick another model, then run analyze again.
+              </Text>
+            )}
 
-        <section className="mt-8 space-y-4">
-          {snapshot ? (
-            <FanOutBoard
-              snapshot={snapshot}
-              company={opportunity?.company ?? "deal"}
-              selected={selectedTask}
-              onSelect={setSelectedTask}
-            />
-          ) : (
-            <FanOutBoardIdle />
-          )}
-          <TaskInspector node={selectedTask} />
-        </section>
-
-        {snapshot?.status === "completed" && snapshot.result && (
-          <>
-            <RunTimeline snapshot={snapshot} />
-            <DashboardView
-              data={snapshot.result}
-              onReanalyze={scrollToForm}
-              onCompare={() => {
-                setCompareMode(true);
-                scrollToForm();
-              }}
-            />
-          </>
+            {rateLimitAlert && (
+              <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
+                {rateLimitAlert.message}
+                {rateLimitAlert.hint && (
+                  <Text size="sm" mt="xs" c="dimmed">
+                    {rateLimitAlert.hint}
+                  </Text>
+                )}
+              </Alert>
+            )}
+          </Stack>
         )}
-      </main>
 
-      <footer className="border-t border-border py-6 text-center text-label-13 text-faint">
-        <a href="https://render.com/docs/workflows" className="hover:text-muted">
-          Render Workflows
-        </a>
-        {" · "}
-        <a href={GITHUB_URL} className="hover:text-muted">
-          GitHub
-        </a>
-        {" · "}
-        <a href={renderSignupUrlWithUtms("footer_link")} className="hover:text-muted">
-          Sign up
-        </a>
-      </footer>
-    </div>
+        <Stack gap="md">
+          <Transition
+            mounted={showBoard}
+            transition="fade"
+            duration={200}
+            timingFunction="ease"
+          >
+            {(styles) => (
+              <div style={styles}>
+                <FlowBoard
+                  snapshot={snapshot}
+                  idle={!snapshot}
+                  company={opportunity?.company ?? "Deal"}
+                  onSelectTask={handleSelectTask}
+                />
+              </div>
+            )}
+          </Transition>
+
+          <Transition
+            mounted={showGantt && Boolean(snapshot)}
+            transition="fade"
+            duration={200}
+            timingFunction="ease"
+          >
+            {(styles) => (
+              <div style={styles}>{snapshot && <GanttStrip snapshot={snapshot} />}</div>
+            )}
+          </Transition>
+        </Stack>
+
+        <TaskInspector
+          node={selectedTask}
+          dimension={selectedDimension}
+          opened={inspectorOpen}
+          onClose={() => setInspectorOpen(false)}
+        />
+
+        {showDashboard && snapshot?.result && (
+          <DashboardView
+            data={snapshot.result}
+            onReanalyze={scrollToForm}
+            onCompare={() => {
+              setCompareMode(true);
+              scrollToForm();
+            }}
+          />
+        )}
+
+        <Divider />
+        <AppFooter />
+      </Stack>
+    </Container>
   );
 }

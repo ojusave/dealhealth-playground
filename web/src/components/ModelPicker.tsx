@@ -1,51 +1,16 @@
-import { useEffect, useState } from "react";
-import type { ModelsResponse } from "../lib/api";
-
-const PROVIDER_LABEL: Record<string, string> = {
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-  xai: "xAI",
-};
-
-function groupLabel(name: string, source: string): string {
-  const base = PROVIDER_LABEL[name] ?? name;
-  if (source === "live") return base;
-  if (source === "stale") return `${base} · stale`;
-  return `${base} · cached`;
-}
-
-export function ModelPicker({
-  models,
-  value,
-  onChange,
-}: {
-  models: ModelsResponse | null;
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  if (!models) {
-    return <select className="field" disabled aria-label="Model"><option>Loading…</option></select>;
-  }
-
-  return (
-    <select
-      className="field"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label="Model"
-    >
-      {Object.entries(models.providers).map(([name, group]) => (
-        <optgroup key={name} label={groupLabel(name, group.source)}>
-          {group.models.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  );
-}
+import { useEffect, useMemo, useState } from "react";
+import {
+  Chip,
+  Group,
+  SegmentedControl,
+  Skeleton,
+  Stack,
+  Text,
+  Tooltip,
+  Badge,
+} from "@mantine/core";
+import { PROVIDER_LABEL } from "../constants";
+import { selectableProviders, type ModelsResponse } from "../lib/api";
 
 export function usePersistedModel(
   defaultId: string,
@@ -67,4 +32,103 @@ export function usePersistedModel(
   }, [available, defaultId, modelId]);
 
   return [modelId, setModelId];
+}
+
+export function ModelPicker({
+  models,
+  value,
+  onChange,
+  disabled,
+}: {
+  models: ModelsResponse | null;
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+}) {
+  const groups = useMemo(
+    () => (models ? selectableProviders(models) : []),
+    [models]
+  );
+
+  const providerKeys = groups.map(([key]) => key);
+
+  const [provider, setProvider] = useState(providerKeys[0] ?? "openai");
+
+  useEffect(() => {
+    if (providerKeys.length && !providerKeys.includes(provider)) {
+      setProvider(providerKeys[0]);
+    }
+  }, [providerKeys, provider]);
+
+  const activeGroup = groups.find(([key]) => key === provider)?.[1];
+
+  useEffect(() => {
+    if (!activeGroup?.models.length) return;
+    if (!activeGroup.models.some((m) => m.id === value)) {
+      onChange(activeGroup.models[0].id);
+    }
+  }, [activeGroup, value, onChange]);
+
+  if (!models) {
+    return (
+      <Stack gap="sm">
+        <Skeleton height={36} radius="md" />
+        <Skeleton height={32} radius="md" />
+      </Stack>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <Text size="sm" c="dimmed">
+        No models available. Add provider API keys on dealhealth-api.
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap="sm">
+      <SegmentedControl
+        value={provider}
+        onChange={setProvider}
+        disabled={disabled}
+        data={groups.map(([key]) => ({
+          value: key,
+          label: PROVIDER_LABEL[key] ?? key,
+        }))}
+        fullWidth
+      />
+      <Chip.Group
+        multiple={false}
+        value={value}
+        onChange={(v) => v && onChange(v)}
+      >
+        <Group gap="xs">
+          {activeGroup?.models.map((m) => (
+            <Tooltip key={m.id} label={`Tier: ${m.tier}`} withArrow>
+              <Chip value={m.id} disabled={disabled} variant="outline">
+                <Group gap={4} wrap="nowrap">
+                  {m.label}
+                  {m.isNew && (
+                    <Badge size="xs" color="indigo">
+                      New
+                    </Badge>
+                  )}
+                </Group>
+              </Chip>
+            </Tooltip>
+          ))}
+        </Group>
+      </Chip.Group>
+    </Stack>
+  );
+}
+
+export function modelLabel(models: ModelsResponse | null, modelId: string): string {
+  if (!models) return "model";
+  for (const [, group] of selectableProviders(models)) {
+    const match = group.models.find((m) => m.id === modelId);
+    if (match) return match.label;
+  }
+  return modelId;
 }
