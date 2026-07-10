@@ -172,25 +172,26 @@ export function FlowBoard({
             </Text>
           )}
         </Group>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          onNodeClick={onNodeClick}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable
-          panOnDrag={false}
-          zoomOnScroll={false}
-          zoomOnPinch={false}
-          preventScrolling={false}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          proOptions={{ hideAttribution: true }}
-          style={{ width: "100%", height: 420, borderRadius: "var(--mantine-radius-md)" }}
-        >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
-        </ReactFlow>
+        <div className="dh-flow-canvas">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            onNodeClick={onNodeClick}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable
+            panOnDrag={false}
+            zoomOnScroll={false}
+            zoomOnPinch={false}
+            preventScrolling={false}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
+          </ReactFlow>
+        </div>
         <Text size="sm" c="dimmed">
           {idle ? "Run an analysis to see tasks fan out in parallel." : caption}
         </Text>

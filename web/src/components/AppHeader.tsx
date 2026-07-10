@@ -1,4 +1,4 @@
-import { Badge, Box, Container, Group, Image, Text, Title } from "@mantine/core";
+import { Badge, Box, Container, Group, Image, Text } from "@mantine/core";
 import { GitHubLink, RenderCtas } from "./RenderCtas";
 
 export function AppHeader({
@@ -51,16 +51,13 @@ export function AppHeader({
 export function AppHero() {
   return (
     <Box className="dh-hero">
-      <Title order={1} mb="xs">
+      <Text fw={700} size="2rem" lh={1.2} mb="xs">
         AI deal health, fan-out on Render Workflows
-      </Title>
+      </Text>
       <Text c="dimmed" maw={560} size="sm">
         Pick a model, choose a sample opportunity, and watch five parallel dimension tasks run as
         isolated workflow steps. Results merge into one scored dashboard.
       </Text>
-      <Group mt="lg" gap="md" wrap="wrap">
-        <RenderCtas signupContent="hero_cta" showDeployImage size="sm" />
-      </Group>
     </Box>
   );
 }

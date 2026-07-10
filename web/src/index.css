@@ -61,6 +61,21 @@ body {
   background: var(--mantine-color-gray-0);
 }
 
+.dh-flow-canvas {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-gray-0);
+}
+
+.dh-flow-canvas .react-flow {
+  width: 100%;
+  height: 100%;
+}
+
 .dh-deploy-btn {
   display: inline-flex;
   align-items: center;

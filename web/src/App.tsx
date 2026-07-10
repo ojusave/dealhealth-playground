@@ -9,7 +9,6 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  Transition,
 } from "@mantine/core";
 import {
   catalogIssues,
@@ -256,34 +255,15 @@ export default function App() {
               </Stack>
 
               <Stack gap="md">
-                <Transition
-                  mounted={showBoard}
-                  transition="fade"
-                  duration={200}
-                  timingFunction="ease"
-                >
-                  {(styles) => (
-                    <div style={styles}>
-                      <FlowBoard
-                        snapshot={snapshot}
-                        idle={!snapshot}
-                        company={opportunity?.company ?? "Deal"}
-                        onSelectTask={handleSelectTask}
-                      />
-                    </div>
-                  )}
-                </Transition>
-
-                <Transition
-                  mounted={showGantt && Boolean(snapshot)}
-                  transition="fade"
-                  duration={200}
-                  timingFunction="ease"
-                >
-                  {(styles) => (
-                    <div style={styles}>{snapshot && <GanttStrip snapshot={snapshot} />}</div>
-                  )}
-                </Transition>
+                {showBoard && (
+                  <FlowBoard
+                    snapshot={snapshot}
+                    idle={!snapshot}
+                    company={opportunity?.company ?? "Deal"}
+                    onSelectTask={handleSelectTask}
+                  />
+                )}
+                {showGantt && snapshot && <GanttStrip snapshot={snapshot} />}
               </Stack>
             </SimpleGrid>
             </Box>
