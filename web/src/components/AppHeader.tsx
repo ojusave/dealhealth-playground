@@ -20,7 +20,7 @@ export function AppHeader({
       <Container size="lg" py="sm">
         <Group justify="space-between" wrap="nowrap">
           <Group gap="sm" wrap="nowrap">
-            <Image src="https://render.com/favicon.ico" alt="" w={22} h={22} />
+            <Image src="/favicon.svg" alt="" w={22} h={22} />
             <Text fw={700} size="lg" style={{ letterSpacing: "-0.02em" }}>
               DealHealth
             </Text>
