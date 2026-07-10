@@ -1,0 +1,16 @@
+{
+  "name": "dealhealth",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"pnpm --filter @dealhealth/api dev\" \"pnpm --filter @dealhealth/web dev\"",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @dealhealth/api start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

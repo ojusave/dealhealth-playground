@@ -1,0 +1,59 @@
+previews:
+  generation: automatic
+
+services:
+  - type: web
+    name: dealhealth-api
+    runtime: node
+    plan: starter
+    rootDir: services/api
+    buildCommand: cd ../.. && pnpm install && pnpm --filter @dealhealth/core build && pnpm --filter @dealhealth/api build
+    startCommand: node dist/index.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: EXECUTION_MODE
+        value: workflows
+      - key: MODEL_REFRESH_MINUTES
+        value: "15"
+      - key: RENDER_API_KEY
+        displayName: Render API Key
+        description: "Required: Render API key for triggering workflow tasks. Create one at https://render.com/docs/api#1-create-an-api-key"
+        required: true
+        sensitive: true
+        sync: false
+      - key: WORKFLOW_TASK_SLUG
+        displayName: Workflow Task Slug
+        description: "Required after workflow deploy: task slug from Dashboard, e.g. dealhealth-workflows/analyzeOpportunity"
+        required: true
+        sync: false
+      - key: EVENTS_SECRET
+        displayName: Events Secret
+        description: "Required: shared bearer secret for workflow task callbacks (same value on workflow service)"
+        required: true
+        sensitive: true
+        sync: false
+      - key: API_BASE_URL
+        displayName: API Base URL
+        description: "Required: public dealhealth-api URL (workflow tasks POST progress here)"
+        required: true
+        sync: false
+      - key: ALLOWED_ORIGIN
+        displayName: Allowed Origin
+        description: "Required: public dealhealth-web URL for CORS"
+        required: true
+        sync: false
+
+  - type: web
+    name: dealhealth-web
+    runtime: static
+    rootDir: web
+    buildCommand: cd ../.. && pnpm install && pnpm --filter @dealhealth/web build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        displayName: API Base URL (build-time)
+        description: "Required: public dealhealth-api URL baked into the static build"
+        required: true
+        sync: false
