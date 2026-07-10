@@ -9,6 +9,14 @@ import {
 } from "@dealhealth/core";
 import { reportEvent, safeMessage } from "./events.js";
 
+function resolveKeys(input: TaskContext) {
+  return {
+    openai: input.keys?.openai ?? process.env.OPENAI_API_KEY,
+    anthropic: input.keys?.anthropic ?? process.env.ANTHROPIC_API_KEY,
+    xai: input.keys?.xai ?? process.env.XAI_API_KEY,
+  };
+}
+
 export const analyzeDimension = task(
   {
     name: "analyzeDimension",
@@ -25,11 +33,7 @@ export const analyzeDimension = task(
         opportunity: input.opportunity,
         modelId: input.modelId,
         dimension: input.dimension as DimensionName,
-        keys: {
-          openai: process.env.OPENAI_API_KEY,
-          anthropic: process.env.ANTHROPIC_API_KEY,
-          xai: process.env.XAI_API_KEY,
-        },
+        keys: resolveKeys(input),
       });
       await reportEvent(input, {
         type: "dimension:completed",
@@ -59,11 +63,7 @@ export const analyzeOpportunity = task(
   },
   async function analyzeOpportunity(input: TaskContext) {
     const startedAt = Date.now();
-    const keys = {
-      openai: process.env.OPENAI_API_KEY,
-      anthropic: process.env.ANTHROPIC_API_KEY,
-      xai: process.env.XAI_API_KEY,
-    };
+    const keys = resolveKeys(input);
     const provider = resolveProvider(input.modelId) ?? "unknown";
 
     await reportEvent(input, { type: "root:running", attempt: 1, taskRunId: input.renderRootTaskRunId });
@@ -77,7 +77,6 @@ export const analyzeOpportunity = task(
         analyzeDimension({
           ...input,
           dimension,
-          keys: {},
         })
       )
     );

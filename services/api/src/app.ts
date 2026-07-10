@@ -114,7 +114,7 @@ export function createApp(config: ApiConfig) {
       modelId: parsed.data.modelId,
       callbackUrl: `${config.apiBaseUrl}/internal/events`,
       eventsSecret: config.eventsSecret,
-      keys: config.executionMode === "simulated" ? config.keys : {},
+      keys: config.keys,
     };
 
     store.create({
