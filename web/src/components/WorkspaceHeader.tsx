@@ -10,11 +10,11 @@ export function WorkspaceHeader() {
         <Group gap="sm">
           <Image src="/favicon.svg" alt="" w={22} h={22} />
           <Text fw={700} size="lg">
-            DealHealth
+            Deal Review
           </Text>
         </Group>
         <Text className="workspace-kicker" visibleFrom="sm">
-          Workflow canvas
+          Run Explorer
         </Text>
         <Tooltip label={dark ? "Use light theme" : "Use dark theme"}>
           <ActionIcon

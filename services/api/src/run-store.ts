@@ -148,18 +148,27 @@ export class RunStore {
     if (event.type !== "run:failed" && event.type !== "aggregate:completed") {
       record.status = "running";
     }
-    record.activity.push({
-      type: event.type,
-      timestamp: event.timestamp,
-      dimension: event.dimension,
-      attempt: event.attempt,
-      taskRunId: event.taskRunId,
-      message: event.message,
-    });
-    if (record.activity.length > 100) record.activity.shift();
+    const duplicate = record.activity.some(
+      (activity) =>
+        activity.type === event.type &&
+        activity.dimension === event.dimension &&
+        activity.attempt === event.attempt &&
+        Math.abs(Date.parse(activity.timestamp) - Date.parse(event.timestamp)) < 5_000
+    );
+    if (!duplicate) {
+      record.activity.push({
+        type: event.type,
+        timestamp: event.timestamp,
+        dimension: event.dimension,
+        attempt: event.attempt,
+        taskRunId: event.taskRunId,
+        message: event.message,
+      });
+      if (record.activity.length > 100) record.activity.shift();
+    }
 
     if (event.type === "root:running") {
-      if (event.taskRunId) record.renderRootTaskRunId = event.taskRunId;
+      if (!duplicate && event.taskRunId) record.renderRootTaskRunId = event.taskRunId;
       this.notify(record);
       return;
     }

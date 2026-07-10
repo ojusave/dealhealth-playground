@@ -1,4 +1,4 @@
-import { Badge, Divider, Group, List, ScrollArea, Stack, Text } from "@mantine/core";
+import { Badge, Divider, Group, List, Stack, Text } from "@mantine/core";
 import type { RunSnapshot, TaskNode } from "../lib/api";
 
 function statusColor(status?: string): string {
@@ -20,8 +20,7 @@ export function InspectorPanel({
   const result = snapshot?.result;
 
   return (
-    <ScrollArea className="inspector-scroll" type="auto">
-      <Stack gap="lg" p="md">
+    <Stack gap="lg" p="md">
         <Stack gap={4}>
           <Text className="workspace-kicker">{task ? "Selected task" : "Run details"}</Text>
           <Group justify="space-between" align="center">
@@ -91,7 +90,6 @@ export function InspectorPanel({
             </Stack>
           </>
         )}
-      </Stack>
-    </ScrollArea>
+    </Stack>
   );
 }

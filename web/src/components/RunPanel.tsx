@@ -16,12 +16,12 @@ export function RunPanel({
 
   return (
     <Paper className="dh-panel canvas-panel" p="md">
-      <Tabs defaultValue="graph">
+      <Tabs key={snapshot?.status ?? "idle"} defaultValue="graph">
         <Group justify="space-between" align="center" mb="md" wrap="nowrap">
           <Tabs.List>
             <Tabs.Tab value="graph">Graph</Tabs.Tab>
             <Tabs.Tab value="activity">
-              Activity
+              Event log
               {eventCount > 0 && (
                 <Badge size="xs" variant="light" color="gray" ml={6}>
                   {eventCount}

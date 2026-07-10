@@ -15,6 +15,7 @@ import {
   type TaskNode,
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
+import { AnalysisReport } from "./components/AnalysisReport";
 import { AppFooter } from "./components/AppHeader";
 import { ExecutionTrace } from "./components/ExecutionTrace";
 import { HowItWorksModal } from "./components/HowItWorksModal";
@@ -22,6 +23,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
+import { ResizableWorkspace } from "./components/ResizableWorkspace";
 import { RunPanel } from "./components/RunPanel";
 import { RunSummary } from "./components/RunSummary";
 import { WorkspaceHeader } from "./components/WorkspaceHeader";
@@ -38,6 +40,7 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [showHow, setShowHow] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const notifiedRunError = useRef<string | null>(null);
   const stopSubscription = useRef<(() => void) | null>(null);
@@ -108,6 +111,7 @@ export default function App() {
     setRateLimitAlert(null);
     setDispatching(true);
     setRunning(true);
+    setAnalysisOpen(false);
     setSnapshot(null);
     setSelectedTask(null);
     setSelectedDimension("");
@@ -215,7 +219,11 @@ export default function App() {
 
   const canvas = (
     <Stack gap="md" className="canvas-stack">
-      <RunSummary snapshot={snapshot} modelLabel={selectedLabel} />
+      <RunSummary
+        snapshot={snapshot}
+        modelLabel={selectedLabel}
+        onViewAnalysis={() => setAnalysisOpen(true)}
+      />
       <RunPanel
         snapshot={snapshot}
         company={opportunity?.company ?? "Deal"}
@@ -237,7 +245,18 @@ export default function App() {
     <Box className="workspace-page">
       <WorkspaceHeader />
       <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
-      {initialLoading && !models ? (
+      {analysisOpen && snapshot?.result && opportunity ? (
+        <AnalysisReport
+          data={snapshot.result}
+          opportunity={opportunity}
+          snapshot={snapshot}
+          onBack={() => setAnalysisOpen(false)}
+          onRunAgain={() => {
+            setAnalysisOpen(false);
+            void analyze();
+          }}
+        />
+      ) : initialLoading && !models ? (
         <Box p="md"><LoadingSkeleton /></Box>
       ) : mobile ? (
         <Tabs defaultValue="canvas" className="mobile-workspace">
@@ -251,11 +270,7 @@ export default function App() {
           <Tabs.Panel value="inspector">{inspector}</Tabs.Panel>
         </Tabs>
       ) : (
-        <div className="workspace-grid">
-          <aside className="workspace-sidebar">{controls}</aside>
-          <main className="workspace-canvas">{canvas}</main>
-          <aside className="workspace-inspector">{inspector}</aside>
-        </div>
+        <ResizableWorkspace controls={controls} canvas={canvas} inspector={inspector} />
       )}
       <Box className="workspace-footer">
         <AppFooter

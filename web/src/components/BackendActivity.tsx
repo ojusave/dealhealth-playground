@@ -5,7 +5,7 @@ function activityLabel(type: string): string {
   const labels: Record<string, string> = {
     "root:running": "Root started",
     "dimension:queued": "Queued",
-    "dimension:running": "Running",
+    "dimension:running": "Started",
     "dimension:completed": "Completed",
     "dimension:failed": "Failed",
     "aggregate:completed": "Merged",
@@ -42,7 +42,7 @@ export function BackendActivity({
       {!embedded && (
         <Group justify="space-between" align="center">
           <Text fw={600} size="sm">
-            Activity
+            Event log
           </Text>
           {snapshot && (
             <Badge color={snapshot.status === "failed" ? "red" : "gray"} variant="light">

@@ -1,4 +1,4 @@
-import { Badge, Group, RingProgress, SimpleGrid, Stack, Text } from "@mantine/core";
+import { Badge, Button, Group, RingProgress, SimpleGrid, Stack, Text } from "@mantine/core";
 import type { RunSnapshot } from "../lib/api";
 
 function elapsed(snapshot: RunSnapshot | null): number {
@@ -13,9 +13,11 @@ function elapsed(snapshot: RunSnapshot | null): number {
 export function RunSummary({
   snapshot,
   modelLabel,
+  onViewAnalysis,
 }: {
   snapshot: RunSnapshot | null;
   modelLabel: string;
+  onViewAnalysis: () => void;
 }) {
   const completed = snapshot?.tasks.filter((task) => task.status === "completed").length ?? 0;
   const failed = snapshot?.tasks.filter((task) => task.status === "failed").length ?? 0;
@@ -64,6 +66,11 @@ export function RunSummary({
             </Badge>
           )}
         </Group>
+        {snapshot?.status === "completed" && snapshot.result ? (
+          <Button size="compact-xs" variant="light" onClick={onViewAnalysis}>
+            View analysis
+          </Button>
+        ) : null}
       </Stack>
       <Stack gap={2} className="run-summary-cell" justify="center">
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Compute / wall</Text>
