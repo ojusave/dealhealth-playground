@@ -12,7 +12,7 @@ services:
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
-        value: "20"
+        value: "22"
       - key: EXECUTION_MODE
         value: workflows
       - key: MODEL_REFRESH_MINUTES
