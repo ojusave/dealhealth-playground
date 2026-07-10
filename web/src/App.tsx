@@ -11,15 +11,10 @@ import {
 } from "./lib/api";
 import { DashboardView } from "./components/DashboardView";
 import { renderSignupUrlWithUtms } from "./lib/renderSignup";
-import {
-  FanOutBoard,
-  FanOutBoardIdle,
-  RunTimeline,
-  TaskInspector,
-} from "./components/FanOutBoard";
+import { FanOutBoard, FanOutBoardIdle, RunTimeline, TaskInspector } from "./components/FanOutBoard";
 import { ModelPicker, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
-import { Header, HowItWorksModal, SectionLabel } from "./components/Chrome";
+import { Header, HowItWorksModal } from "./components/Chrome";
 
 const GITHUB_URL = "https://github.com/ojusave/dealhealth-playground";
 const DEPLOY_URL =
@@ -49,11 +44,6 @@ export default function App() {
     models?.defaultModelId ?? "gpt-5.6-terra",
     allModelIds
   );
-
-  const modelLabel =
-    Object.values(models?.providers ?? {})
-      .flatMap((p) => p.models)
-      .find((m) => m.id === modelId)?.label ?? modelId;
 
   useEffect(() => {
     void fetchModels().then(setModels).catch(() => setError("Could not load models."));
@@ -103,110 +93,70 @@ export default function App() {
       />
       <HowItWorksModal open={showHow} onClose={() => setShowHow(false)} />
 
-      <main className="mx-auto w-full max-w-content flex-1 px-4 py-8">
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
-          <section ref={formRef} className="space-y-6 lg:col-span-5">
-            <div>
-              <SectionLabel hint="Refreshed live from provider list endpoints">
-                Frontier model
-              </SectionLabel>
-              <ModelPicker models={models} value={modelId} onChange={setModelId} />
-              {compareMode && (
-                <p className="mt-3 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent">
-                  Comparison mode: pick another model, then analyze again on the same deal.
-                </p>
-              )}
-            </div>
-
+      <main className="mx-auto w-full max-w-content flex-1 px-4 py-10">
+        <section ref={formRef} className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
+            <ModelPicker models={models} value={modelId} onChange={setModelId} />
             {opportunity && (
               <OpportunityForm samples={samples} value={opportunity} onChange={setOpportunity} />
             )}
+            <button
+              type="button"
+              disabled={running || !opportunity}
+              onClick={() => void analyze()}
+              className="btn-primary w-full sm:w-auto sm:min-w-[7rem]"
+            >
+              {running ? "Running…" : "Analyze"}
+            </button>
+          </div>
 
-            <div className="panel p-4">
-              <button
-                type="button"
-                disabled={running || !opportunity}
-                onClick={() => void analyze()}
-                className="btn-primary w-full"
-              >
-                {running && (
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                )}
-                {running ? "Fan-out in progress…" : `Analyze with ${modelLabel}`}
-              </button>
-              <p className="mt-3 text-center text-xs text-faint">
-                Public demo · rate limited · 5 dimension tasks + 1 synthesis per run
-              </p>
-            </div>
+          {compareMode && (
+            <p className="text-label-13 text-muted">Pick another model, then Analyze.</p>
+          )}
+          {error && <p className="text-copy-14 text-critical">{error}</p>}
+        </section>
 
-            {error && (
-              <div className="rounded-xl border border-critical/40 bg-critical/10 px-4 py-3 text-sm text-critical">
-                <p className="font-medium">Something went wrong</p>
-                <p className="mt-1">{error}</p>
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-5 lg:col-span-7">
-            {snapshot ? (
-              <>
-                <FanOutBoard
-                  snapshot={snapshot}
-                  company={opportunity?.company ?? "deal"}
-                  selected={selectedTask}
-                  onSelect={setSelectedTask}
-                />
-                <TaskInspector node={selectedTask} />
-              </>
-            ) : (
-              <>
-                <FanOutBoardIdle
-                  company={opportunity?.company ?? "your deal"}
-                  modelLabel={modelLabel}
-                />
-                <TaskInspector node={null} />
-              </>
-            )}
-          </section>
-        </div>
+        <section className="mt-8 space-y-4">
+          {snapshot ? (
+            <FanOutBoard
+              snapshot={snapshot}
+              company={opportunity?.company ?? "deal"}
+              selected={selectedTask}
+              onSelect={setSelectedTask}
+            />
+          ) : (
+            <FanOutBoardIdle />
+          )}
+          <TaskInspector node={selectedTask} />
+        </section>
 
         {snapshot?.status === "completed" && snapshot.result && (
-          <div className="mt-10 border-t border-border pt-10">
-            <SectionLabel hint="Aggregated from parallel dimension analyses">
-              Opportunity health dashboard
-            </SectionLabel>
+          <>
             <RunTimeline snapshot={snapshot} />
-            <div className="mt-5">
-              <DashboardView
-                data={snapshot.result}
-                onReanalyze={scrollToForm}
-                onCompare={() => {
-                  setCompareMode(true);
-                  scrollToForm();
-                }}
-              />
-            </div>
-          </div>
+            <DashboardView
+              data={snapshot.result}
+              onReanalyze={scrollToForm}
+              onCompare={() => {
+                setCompareMode(true);
+                scrollToForm();
+              }}
+            />
+          </>
         )}
       </main>
 
-      <footer className="border-t border-border py-8 text-center text-xs text-faint">
-        <p>
-          Orchestrated on{" "}
-          <a href="https://render.com/docs/workflows" className="text-accent hover:underline">
-            Render Workflows
-          </a>
-          {" · "}sample opportunities, public demo
-        </p>
-        <p className="mt-2">
-          <a href={GITHUB_URL} className="hover:text-muted">
-            GitHub repository
-          </a>
-          {" · "}
-          <a href={renderSignupUrlWithUtms("footer_link")} className="hover:text-muted">
-            Sign up on Render
-          </a>
-        </p>
+      <footer className="border-t border-border py-6 text-center text-label-13 text-faint">
+        <a href="https://render.com/docs/workflows" className="hover:text-muted">
+          Render Workflows
+        </a>
+        {" · "}
+        <a href={GITHUB_URL} className="hover:text-muted">
+          GitHub
+        </a>
+        {" · "}
+        <a href={renderSignupUrlWithUtms("footer_link")} className="hover:text-muted">
+          Sign up
+        </a>
       </footer>
     </div>
   );

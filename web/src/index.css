@@ -4,54 +4,31 @@
 
 @layer base {
   body {
-    @apply bg-canvas text-ink font-sans antialiased;
-    background-image: theme(backgroundImage.hero-glow), theme(backgroundImage.grid);
-    background-size: auto, theme(backgroundSize.grid);
-    background-attachment: fixed;
-  }
-
-  ::selection {
-    @apply bg-accent/30 text-ink;
+    @apply bg-bg text-ink font-sans antialiased text-label-14;
   }
 }
 
 @layer components {
-  .panel {
-    @apply rounded-2xl border border-border bg-elevated/90 shadow-card backdrop-blur-sm;
+  .field {
+    @apply h-9 w-full rounded-md border border-border bg-surface px-3 text-label-14 text-ink
+      focus:border-ink/40 focus:outline-none focus:ring-1 focus:ring-ink/20;
   }
 
-  .panel-header {
-    @apply flex items-center justify-between gap-3 px-5 py-4 border-b border-border;
-  }
-
-  .field-input {
-    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink
-      placeholder:text-faint transition-colors
-      focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20;
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 rounded-md px-4 text-label-14 font-medium
+      transition-colors disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold
-      text-white bg-gradient-to-b from-accent to-accent-glow shadow-glow
-      transition-all hover:brightness-110 active:scale-[0.99]
-      disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:brightness-100;
+    @apply btn bg-ink text-bg hover:bg-ink/90;
   }
 
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface/60
-      px-3.5 py-2 text-sm text-muted transition-colors hover:border-border-bright hover:text-ink;
+  .btn-secondary {
+    @apply btn border border-border bg-surface text-ink hover:border-ink/30;
   }
 
-  .provider-openai {
-    @apply border-openai/30 bg-openai/10 text-openai;
-  }
-
-  .provider-anthropic {
-    @apply border-anthropic/30 bg-anthropic/10 text-anthropic;
-  }
-
-  .provider-xai {
-    @apply border-xai/30 bg-xai/10 text-xai;
+  .status-dot {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full;
   }
 }
 
@@ -60,40 +37,4 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-.telemetry {
-  @apply font-mono text-xs tracking-tight text-muted;
-}
-
-.pulse-live {
-  animation: pulse-ring 1.8s ease-in-out infinite;
-}
-
-@keyframes pulse-ring {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(108, 140, 255, 0.35), 0 0 0 1px rgba(108, 140, 255, 0.25);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(108, 140, 255, 0.08), 0 0 0 1px rgba(108, 140, 255, 0.45);
-  }
-}
-
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.score-enter {
-  animation: count-up 0.55s ease-out forwards;
-}
-
-.bar-enter {
-  animation: count-up 0.4s ease-out forwards;
-}
-
-.pipeline-line {
-  background: linear-gradient(90deg, transparent, rgba(108, 140, 255, 0.45), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2.8s linear infinite;
 }
