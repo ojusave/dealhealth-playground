@@ -1,3 +1,14 @@
+import type {
+  Dashboard,
+  Opportunity,
+  RunActivity,
+  RunSnapshot,
+  TaskNodeState,
+} from "@dealhealth/core";
+
+export type { Dashboard, Opportunity, RunActivity, RunSnapshot };
+export type TaskNode = TaskNodeState;
+
 export function renderSignupUrlWithUtms(content: string = "footer_link"): string {
   const params = new URLSearchParams({
     utm_source: "github",
@@ -37,88 +48,6 @@ export interface ModelsResponse {
   defaultModelId: string;
   configuredProviders: string[];
   providers: Record<string, ProviderCatalog>;
-}
-
-export interface Opportunity {
-  id?: string;
-  company: string;
-  stage: string;
-  arr: number;
-  expectedCloseDate: string;
-  activityLevel: number;
-  daysSinceLastTouch: number;
-  budgetConfirmed: boolean;
-  economicBuyerIdentified: boolean;
-  execSponsorEngaged: boolean;
-  pilotStatus: string;
-  securityReview: string;
-  discoveryComplete: boolean;
-  mutualActionPlan: boolean;
-  competitorInDeal: boolean;
-  notes: string;
-}
-
-export interface TaskNode {
-  dimension: string;
-  status: string;
-  queuedAt?: string;
-  startedAt?: string;
-  finishedAt?: string;
-  durationMs?: number;
-  attempt: number;
-  taskRunId?: string;
-  score?: number;
-  message?: string;
-  findings?: string;
-  reasoning?: string[];
-}
-
-export interface RunActivity {
-  type:
-    | "root:running"
-    | "dimension:queued"
-    | "dimension:running"
-    | "dimension:completed"
-    | "dimension:failed"
-    | "aggregate:completed"
-    | "run:failed";
-  timestamp: string;
-  dimension?: string;
-  attempt: number;
-  taskRunId?: string;
-  message?: string;
-}
-
-export interface RunSnapshot {
-  status: string;
-  modelId: string;
-  mode: "workflows" | "simulated";
-  queuedAt: string;
-  lastEventAt?: string;
-  renderRootTaskRunId?: string;
-  tasks: TaskNode[];
-  activity?: RunActivity[];
-  result?: Dashboard;
-  error?: string;
-}
-
-export interface Dashboard {
-  overall_score: number;
-  status: string;
-  summary: string;
-  dimensions: Array<{ name: string; score: number; findings: string; failed: boolean }>;
-  risks: Array<{ severity: string; signal: string; description: string; dimension: string }>;
-  recommendations: string[];
-  context: { deal_context: string; decision_path: string; validation_scope: string };
-  reasoning: Array<{ dimension: string; steps: string[] }>;
-  meta: {
-    modelId: string;
-    modelLabel: string;
-    provider: string;
-    mode: string;
-    durationMs: number;
-    partial: boolean;
-  };
 }
 
 type ApiErrorBody = {

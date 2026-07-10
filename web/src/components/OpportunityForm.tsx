@@ -114,7 +114,7 @@ export function OpportunityForm({
               label="Stage"
               data={STAGES}
               value={value.stage}
-              onChange={(v) => v && set("stage", v)}
+              onChange={(v) => v && set("stage", v as Opportunity["stage"])}
             />
             <NumberInput
               label="ARR"
@@ -157,13 +157,15 @@ export function OpportunityForm({
               label="Pilot status"
               data={PILOT}
               value={value.pilotStatus}
-              onChange={(v) => v && set("pilotStatus", v)}
+              onChange={(v) => v && set("pilotStatus", v as Opportunity["pilotStatus"])}
             />
             <Select
               label="Security review"
               data={SECURITY}
               value={value.securityReview}
-              onChange={(v) => v && set("securityReview", v)}
+              onChange={(v) =>
+                v && set("securityReview", v as Opportunity["securityReview"])
+              }
             />
             <Stack gap="xs" style={{ gridColumn: "1 / -1" }}>
               <Text size="sm" fw={500}>

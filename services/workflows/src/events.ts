@@ -30,7 +30,3 @@ export async function reportEvent(
     console.warn(`[events] ${res.status} posting ${event.type}`);
   }
 }
-
-export function safeMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}

@@ -1,60 +1,8 @@
-import type { Dashboard, ProgressEvent } from "@dealhealth/core";
-import { DIMENSIONS } from "@dealhealth/core";
+import { DIMENSIONS, type ExecutionMode, type ProgressEvent } from "@dealhealth/core";
+import { applyRunEvent } from "./apply-run-event.js";
+import type { RunRecord, RunSnapshot, TaskMetadata } from "./run-types.js";
 
-export type TaskStatus = "queued" | "running" | "completed" | "failed";
-
-export interface TaskNodeState {
-  dimension: string;
-  status: TaskStatus;
-  queuedAt?: string;
-  startedAt?: string;
-  finishedAt?: string;
-  durationMs?: number;
-  attempt: number;
-  taskRunId?: string;
-  score?: number;
-  message?: string;
-  findings?: string;
-  reasoning?: string[];
-}
-
-export interface RunActivity {
-  type: ProgressEvent["type"];
-  timestamp: string;
-  dimension?: string;
-  attempt: number;
-  taskRunId?: string;
-  message?: string;
-}
-
-export interface RunRecord {
-  runId: string;
-  status: "queued" | "running" | "completed" | "failed";
-  modelId: string;
-  mode: "workflows" | "simulated";
-  queuedAt: string;
-  updatedAt: string;
-  lastEventAt: string;
-  renderRootTaskRunId?: string;
-  tasks: TaskNodeState[];
-  activity: RunActivity[];
-  result?: Dashboard;
-  error?: string;
-  listeners: Set<(snapshot: RunSnapshot) => void>;
-}
-
-export interface RunSnapshot {
-  status: RunRecord["status"];
-  modelId: string;
-  mode: RunRecord["mode"];
-  queuedAt: string;
-  lastEventAt: string;
-  renderRootTaskRunId?: string;
-  tasks: TaskNodeState[];
-  activity: RunActivity[];
-  result?: Dashboard;
-  error?: string;
-}
+export type { RunRecord, RunSnapshot } from "./run-types.js";
 
 const TTL_MS = 30 * 60_000;
 
@@ -70,7 +18,7 @@ export class RunStore {
   create(input: {
     runId: string;
     modelId: string;
-    mode: "workflows" | "simulated";
+    mode: ExecutionMode;
     renderRootTaskRunId?: string;
   }): RunRecord {
     this.purgeExpired();
@@ -141,86 +89,11 @@ export class RunStore {
       );
       return;
     }
-
-    const now = event.timestamp;
-    record.updatedAt = now;
-    record.lastEventAt = now;
-    if (event.type !== "run:failed" && event.type !== "aggregate:completed") {
-      record.status = "running";
-    }
-    const duplicate = record.activity.some(
-      (activity) =>
-        activity.type === event.type &&
-        activity.dimension === event.dimension &&
-        activity.attempt === event.attempt &&
-        Math.abs(Date.parse(activity.timestamp) - Date.parse(event.timestamp)) < 5_000
-    );
-    if (!duplicate) {
-      record.activity.push({
-        type: event.type,
-        timestamp: event.timestamp,
-        dimension: event.dimension,
-        attempt: event.attempt,
-        taskRunId: event.taskRunId,
-        message: event.message,
-      });
-      if (record.activity.length > 100) record.activity.shift();
-    }
-
-    if (event.type === "root:running") {
-      if (!duplicate && event.taskRunId) record.renderRootTaskRunId = event.taskRunId;
-      this.notify(record);
-      return;
-    }
-
-    if (event.type.startsWith("dimension:")) {
-      const task = record.tasks.find((t) => t.dimension === event.dimension);
-      if (!task) return;
-      task.attempt = event.attempt;
-      if (event.taskRunId) task.taskRunId = event.taskRunId;
-
-      if (event.type === "dimension:queued") {
-        task.status = "queued";
-        task.queuedAt = now;
-      } else if (event.type === "dimension:running") {
-        task.status = "running";
-        task.startedAt = task.startedAt ?? now;
-      } else if (event.type === "dimension:completed") {
-        task.status = "completed";
-        task.finishedAt = now;
-        if (task.startedAt) {
-          task.durationMs = Date.parse(now) - Date.parse(task.startedAt);
-        }
-        const payload = event.payload as { score?: number; findings?: string; reasoning_steps?: string[] };
-        if (payload?.score != null) task.score = payload.score;
-        if (payload?.findings) task.findings = payload.findings;
-        if (payload?.reasoning_steps) task.reasoning = payload.reasoning_steps;
-      } else if (event.type === "dimension:failed") {
-        task.status = "failed";
-        task.finishedAt = now;
-        task.message = event.message ?? "Dimension analysis failed";
-        if (task.startedAt) {
-          task.durationMs = Date.parse(now) - Date.parse(task.startedAt);
-        }
-      }
-      this.notify(record);
-      return;
-    }
-
-    if (event.type === "aggregate:completed") {
-      record.status = "completed";
-      record.result = event.payload as Dashboard;
+    const result = applyRunEvent(record, event);
+    if (result.becameTerminal) {
       this.activeCount = Math.max(0, this.activeCount - 1);
-      this.notify(record);
-      return;
     }
-
-    if (event.type === "run:failed") {
-      record.status = "failed";
-      record.error = event.message ?? "Run failed";
-      this.activeCount = Math.max(0, this.activeCount - 1);
-      this.notify(record);
-    }
+    if (result.changed) this.notify(record);
   }
 
   markFailed(runId: string, message: string): void {
@@ -233,23 +106,26 @@ export class RunStore {
     });
   }
 
-  staleRuns(): Array<{ runId: string; renderRootTaskRunId?: string; lastEventAt: string }> {
-    // Recover sooner: SSE drops and missed callbacks should not leave the UI queued forever.
-    const cutoff = Date.now() - 20_000;
-    const out: Array<{ runId: string; renderRootTaskRunId?: string; lastEventAt: string }> = [];
-    for (const record of this.runs.values()) {
-      if (
-        (record.status === "running" || record.status === "queued") &&
-        Date.parse(record.lastEventAt) < cutoff
-      ) {
-        out.push({
-          runId: record.runId,
-          renderRootTaskRunId: record.renderRootTaskRunId,
-          lastEventAt: record.lastEventAt,
-        });
-      }
+  setRootTaskRunId(runId: string, taskRunId: string): void {
+    const record = this.runs.get(runId);
+    if (!record) return;
+    record.renderRootTaskRunId = taskRunId;
+    record.updatedAt = new Date().toISOString();
+    this.notify(record);
+  }
+
+  updateTaskMetadata(runId: string, dimension: string, metadata: TaskMetadata): void {
+    const record = this.runs.get(runId);
+    const task = record?.tasks.find((item) => item.dimension === dimension);
+    if (!record || !task) return;
+    task.taskRunId = metadata.taskRunId;
+    task.attempt = metadata.attempt;
+    task.startedAt ??= metadata.startedAt;
+    task.finishedAt ??= metadata.finishedAt;
+    if (task.startedAt && task.finishedAt) {
+      task.durationMs = Date.parse(task.finishedAt) - Date.parse(task.startedAt);
     }
-    return out;
+    this.notify(record);
   }
 
   private purgeExpired(): void {

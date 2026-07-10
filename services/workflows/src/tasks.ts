@@ -1,13 +1,10 @@
 import { task } from "@renderinc/sdk/workflows";
 import {
-  aggregateResults,
-  DIMENSIONS,
-  resolveProvider,
+  analyzeOpportunityPipeline,
   runDimensionAnalysis,
-  type DimensionName,
   type TaskContext,
 } from "@dealhealth/core";
-import { reportEvent, safeMessage } from "./events.js";
+import { reportEvent } from "./events.js";
 
 function resolveKeys(input: TaskContext) {
   return {
@@ -26,31 +23,12 @@ export const analyzeDimension = task(
   },
   async function analyzeDimension(input: TaskContext) {
     if (!input.dimension) throw new Error("dimension is required");
-    const attempt = 1;
-    await reportEvent(input, { type: "dimension:running", dimension: input.dimension, attempt });
-    try {
-      const result = await runDimensionAnalysis({
-        opportunity: input.opportunity,
-        modelId: input.modelId,
-        dimension: input.dimension as DimensionName,
-        keys: resolveKeys(input),
-      });
-      await reportEvent(input, {
-        type: "dimension:completed",
-        dimension: input.dimension,
-        attempt,
-        payload: result,
-      });
-      return result;
-    } catch (err) {
-      await reportEvent(input, {
-        type: "dimension:failed",
-        dimension: input.dimension,
-        attempt,
-        message: safeMessage(err),
-      });
-      throw err;
-    }
+    return runDimensionAnalysis({
+      opportunity: input.opportunity,
+      modelId: input.modelId,
+      dimension: input.dimension,
+      keys: resolveKeys(input),
+    });
   }
 );
 
@@ -62,37 +40,20 @@ export const analyzeOpportunity = task(
     retry: { maxRetries: 0, waitDurationMs: 1000, backoffScaling: 1 },
   },
   async function analyzeOpportunity(input: TaskContext) {
-    const startedAt = Date.now();
     const keys = resolveKeys(input);
-    const provider = resolveProvider(input.modelId) ?? "unknown";
-
-    await reportEvent(input, { type: "root:running", attempt: 1, taskRunId: input.renderRootTaskRunId });
-
-    for (const dimension of DIMENSIONS) {
-      await reportEvent(input, { type: "dimension:queued", dimension, attempt: 1 });
-    }
-
-    const settled = await Promise.allSettled(
-      DIMENSIONS.map((dimension) =>
-        analyzeDimension({
-          ...input,
-          dimension,
-        })
-      )
-    );
-
-    const dashboard = await aggregateResults({
-      opportunity: input.opportunity,
-      modelId: input.modelId,
-      modelLabel: input.modelId,
-      provider,
+    const context = { ...input, keys };
+    return analyzeOpportunityPipeline({
+      ctx: context,
+      modelLabel: input.modelLabel,
       mode: "workflows",
-      startedAt,
-      settled,
-      keys,
+      startedAt: Date.now(),
+      makeTaskRunId: (dimension) => `pending-${dimension.toLowerCase().replaceAll(" ", "-")}`,
+      report: (event) => reportEvent(context, event),
+      executeDimension: async (dimension) =>
+        analyzeDimension({
+          ...context,
+          dimension,
+        }),
     });
-
-    await reportEvent(input, { type: "aggregate:completed", attempt: 1, payload: dashboard });
-    return dashboard;
   }
 );

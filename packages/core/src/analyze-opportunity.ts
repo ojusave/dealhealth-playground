@@ -1,9 +1,8 @@
 import { aggregateResults } from "./aggregate.js";
-import { runDimensionAnalysis } from "./analyze-dimension.js";
 import { DIMENSIONS, type DimensionName } from "./dimensions.js";
 import { resolveProvider } from "./model-filter.js";
-import type { Dashboard, Opportunity } from "./schemas.js";
-import type { ProgressEvent, TaskContext } from "./index.js";
+import type { Dashboard, DimensionResult } from "./schemas.js";
+import type { ProgressEvent, TaskContext } from "./contracts.js";
 
 export type EventReporter = (event: Omit<ProgressEvent, "runId" | "timestamp">) => Promise<void>;
 
@@ -13,6 +12,7 @@ export interface AnalyzeOpportunityOptions {
   mode: "workflows" | "simulated";
   report: EventReporter;
   makeTaskRunId: (dimension: DimensionName) => string;
+  executeDimension: (dimension: DimensionName) => Promise<DimensionResult>;
   startedAt: number;
 }
 
@@ -20,8 +20,11 @@ export interface AnalyzeOpportunityOptions {
 export async function analyzeOpportunityPipeline(
   options: AnalyzeOpportunityOptions
 ): Promise<Dashboard> {
-  const { ctx, modelLabel, mode, report, makeTaskRunId, startedAt } = options;
+  const { ctx, modelLabel, mode, report, makeTaskRunId, executeDimension, startedAt } = options;
   const provider = resolveProvider(ctx.modelId) ?? "unknown";
+  const taskRunIds = new Map(
+    DIMENSIONS.map((dimension) => [dimension, makeTaskRunId(dimension)])
+  );
 
   await report({ type: "root:running", attempt: 1, taskRunId: ctx.renderRootTaskRunId });
 
@@ -30,21 +33,16 @@ export async function analyzeOpportunityPipeline(
       type: "dimension:queued",
       dimension,
       attempt: 1,
-      taskRunId: makeTaskRunId(dimension),
+      taskRunId: taskRunIds.get(dimension),
     });
   }
 
   const settled = await Promise.allSettled(
     DIMENSIONS.map(async (dimension) => {
-      const taskRunId = makeTaskRunId(dimension);
+      const taskRunId = taskRunIds.get(dimension);
       await report({ type: "dimension:running", dimension, attempt: 1, taskRunId });
       try {
-        const result = await runDimensionAnalysis({
-          opportunity: ctx.opportunity,
-          modelId: ctx.modelId,
-          dimension,
-          keys: ctx.keys,
-        });
+        const result = await executeDimension(dimension);
         await report({
           type: "dimension:completed",
           dimension,

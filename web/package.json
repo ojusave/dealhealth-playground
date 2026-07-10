@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dealhealth/core": "workspace:^",
     "@mantine/charts": "^9.4.1",
     "@mantine/core": "^9.4.1",
     "@mantine/dates": "^9.4.1",

@@ -1,5 +1,6 @@
 import {
   analyzeOpportunityPipeline,
+  runDimensionAnalysis,
   type ProgressEvent,
   type TaskContext,
 } from "@dealhealth/core";
@@ -34,6 +35,13 @@ export async function runSimulatedAnalysis(
       startedAt,
       makeTaskRunId: (dimension) => shortId(`sim-${dimension.slice(0, 3).toLowerCase()}`),
       report,
+      executeDimension: (dimension) =>
+        runDimensionAnalysis({
+          opportunity: ctx.opportunity,
+          modelId: ctx.modelId,
+          dimension,
+          keys: ctx.keys,
+        }),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
