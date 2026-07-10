@@ -1,43 +1,16 @@
-import { Badge, Box, Container, Group, Image, Text } from "@mantine/core";
-import { GitHubLink, RenderCtas } from "./RenderCtas";
+import { Anchor, Badge, Box, Container, Group, Image, Text } from "@mantine/core";
+import { GITHUB_URL } from "../constants";
+import { RenderCtas } from "./RenderCtas";
 
-export function AppHeader({
-  mode,
-  onHowItWorks,
-}: {
-  mode: "workflows" | "simulated" | "unknown";
-  onHowItWorks: () => void;
-}) {
-  const modeLabel =
-    mode === "workflows" ? "Workflows" : mode === "simulated" ? "Simulated" : "Idle";
-
+export function AppHeader() {
   return (
     <Box className="dh-header">
       <Container size="lg" py="sm">
-        <Group justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
-            <Image src="/favicon.svg" alt="" w={22} h={22} />
-            <Text fw={700} size="lg" style={{ letterSpacing: "-0.02em" }}>
-              DealHealth
-            </Text>
-          </Group>
-          <Group gap="sm" wrap="nowrap" visibleFrom="sm">
-            <Text
-              component="button"
-              type="button"
-              size="sm"
-              c="dimmed"
-              style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
-              onClick={onHowItWorks}
-            >
-              How it works
-            </Text>
-            <GitHubLink />
-            <Badge variant="light" color="gray" size="lg">
-              {modeLabel}
-            </Badge>
-            <RenderCtas signupContent="navbar_button" />
-          </Group>
+        <Group gap="sm" wrap="nowrap">
+          <Image src="/favicon.svg" alt="" w={22} h={22} />
+          <Text fw={700} size="lg" style={{ letterSpacing: "-0.02em" }}>
+            DealHealth
+          </Text>
         </Group>
       </Container>
     </Box>
@@ -57,10 +30,48 @@ export function AppHero() {
   );
 }
 
-export function AppFooter() {
+export function AppFooter({
+  mode,
+  onHowItWorks,
+}: {
+  mode: "workflows" | "simulated" | "unknown";
+  onHowItWorks: () => void;
+}) {
+  const modeLabel =
+    mode === "workflows" ? "Workflows" : mode === "simulated" ? "Simulated" : "Idle";
+
   return (
-    <Group justify="center" gap="lg" py="xl">
-      <GitHubLink />
+    <Group justify="center" gap="md" py="xl" wrap="wrap">
+      <Text
+        component="button"
+        type="button"
+        size="sm"
+        c="dimmed"
+        style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
+        onClick={onHowItWorks}
+      >
+        How it works
+      </Text>
+      <Anchor
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noreferrer"
+        size="sm"
+        c="dimmed"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+      >
+        <Image
+          src="https://github.githubassets.com/favicons/favicon.svg"
+          alt=""
+          w={14}
+          h={14}
+        />
+        GitHub
+      </Anchor>
+      <Badge variant="light" color="gray" size="lg">
+        {modeLabel}
+      </Badge>
+      <RenderCtas signupContent="footer_link" size="compact-sm" />
     </Group>
   );
 }

@@ -1,5 +1,5 @@
 import { Anchor, Button, Group } from "@mantine/core";
-import { DEPLOY_URL, GITHUB_URL } from "../constants";
+import { DEPLOY_URL } from "../constants";
 import { renderSignupUrlWithUtms } from "../lib/renderSignup";
 
 type Props = {
@@ -8,9 +8,9 @@ type Props = {
   size?: "compact-sm" | "sm" | "md";
 };
 
-/** Deploy + Sign up CTAs for header and hero placements. */
+/** Deploy + Sign up CTAs. Prefer footer placement. */
 export function RenderCtas({
-  signupContent = "navbar_button",
+  signupContent = "footer_link",
   showDeployImage = false,
   size = "compact-sm",
 }: Props) {
@@ -53,13 +53,5 @@ export function RenderCtas({
         Sign up on Render
       </Button>
     </Group>
-  );
-}
-
-export function GitHubLink({ size = "sm" }: { size?: "xs" | "sm" }) {
-  return (
-    <Anchor href={GITHUB_URL} target="_blank" rel="noreferrer" size={size} c="dimmed">
-      GitHub
-    </Anchor>
   );
 }

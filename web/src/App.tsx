@@ -5,7 +5,6 @@ import {
   Button,
   Container,
   Divider,
-  Group,
   SimpleGrid,
   Stack,
   Text,
@@ -30,7 +29,6 @@ import { HowItWorksModal } from "./components/HowItWorksModal";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
-import { RenderCtas } from "./components/RenderCtas";
 import { RunPanel } from "./components/RunPanel";
 import { TaskInspector } from "./components/TaskInspector";
 
@@ -191,19 +189,12 @@ export default function App() {
 
   return (
     <Box className="dh-page">
-      <AppHeader
-        mode={executionMode === "unknown" ? "unknown" : executionMode}
-        onHowItWorks={() => setShowHow(true)}
-      />
+      <AppHeader />
       <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
 
       <Container size="lg" py="xl">
         <Stack gap="xl">
           <AppHero />
-
-          <Group hiddenFrom="sm" justify="center">
-            <RenderCtas signupContent="navbar_button" />
-          </Group>
 
           {initialLoading && !models ? (
             <LoadingSkeleton />
@@ -293,7 +284,10 @@ export default function App() {
           )}
 
           <Divider />
-          <AppFooter />
+          <AppFooter
+            mode={executionMode === "unknown" ? "unknown" : executionMode}
+            onHowItWorks={() => setShowHow(true)}
+          />
         </Stack>
       </Container>
     </Box>
