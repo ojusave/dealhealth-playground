@@ -1,6 +1,7 @@
 import { Render } from "@renderinc/sdk";
 import type { TaskContext } from "@dealhealth/core";
 import type { ApiConfig } from "../config.js";
+import { formatRenderSdkError } from "../format-error.js";
 import type { RunStore } from "../run-store.js";
 import { enrichFromRender } from "../render-enrich.js";
 
@@ -11,7 +12,10 @@ export async function triggerWorkflowRun(
   ctx: TaskContext
 ): Promise<void> {
   if (!config.renderApiKey) {
-    store.markFailed(runId, "RENDER_API_KEY is not configured for workflows mode.");
+    store.markFailed(
+      runId,
+      "RENDER_API_KEY is missing on dealhealth-api. Create one in the Render Dashboard and redeploy the API."
+    );
     return;
   }
 
@@ -37,7 +41,10 @@ export async function triggerWorkflowRun(
       }
     })();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    store.markFailed(runId, `Could not start workflow: ${message}`);
+    const detail = formatRenderSdkError(err);
+    store.markFailed(
+      runId,
+      `Could not start workflow: ${detail}. Verify WORKFLOW_TASK_SLUG and that dealhealth-workflows is deployed.`
+    );
   }
 }

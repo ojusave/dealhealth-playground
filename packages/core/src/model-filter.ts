@@ -20,9 +20,11 @@ export interface DiscoveredModel {
 }
 
 export interface ProviderRegistryState {
+  configured: boolean;
   models: DiscoveredModel[];
   fetchedAt: string | null;
-  source: "live" | "stale" | "fallback";
+  source: "live" | "stale" | "unavailable";
+  error?: string;
 }
 
 export interface ModelRegistrySnapshot {
@@ -106,11 +108,16 @@ export function defaultModelId(models: DiscoveredModel[]): string {
 }
 
 export function emptyRegistry(): ModelRegistrySnapshot {
+  const unavailable = (provider: ProviderName): ProviderRegistryState => ({
+    configured: false,
+    models: [],
+    fetchedAt: null,
+    source: "unavailable",
+  });
   const providers = {
-    openai: { models: fallbackForProvider("openai"), fetchedAt: null, source: "fallback" as const },
-    anthropic: { models: fallbackForProvider("anthropic"), fetchedAt: null, source: "fallback" as const },
-    xai: { models: fallbackForProvider("xai"), fetchedAt: null, source: "fallback" as const },
+    openai: unavailable("openai"),
+    anthropic: unavailable("anthropic"),
+    xai: unavailable("xai"),
   };
-  const all = [...providers.openai.models, ...providers.anthropic.models, ...providers.xai.models];
-  return { providers, defaultModelId: defaultModelId(all) };
+  return { providers, defaultModelId: "" };
 }

@@ -41,8 +41,10 @@ export function createApp(config: ApiConfig) {
 
   app.get("/api/models", (c) => {
     const snap = registry.getSnapshot();
+    const configuredProviders = registry.configuredProviders();
     return c.json({
       defaultModelId: snap.defaultModelId,
+      configuredProviders,
       providers: snap.providers,
     });
   });
@@ -74,7 +76,35 @@ export function createApp(config: ApiConfig) {
 
     const model = registry.findModel(parsed.data.modelId);
     if (!model) {
-      return c.json({ error: `Model ${parsed.data.modelId} is not available.` }, 400);
+      const configured = registry.configuredProviders();
+      if (configured.length === 0) {
+        return c.json(
+          {
+            error: "No provider API keys are configured.",
+            code: "no_provider_keys",
+            hint: "Add OPENAI_API_KEY, ANTHROPIC_API_KEY, or XAI_API_KEY on dealhealth-api, then redeploy.",
+          },
+          503
+        );
+      }
+      if (registry.availableModels().length === 0) {
+        return c.json(
+          {
+            error: "Model catalog is empty. Provider list endpoints failed or returned no matching models.",
+            code: "catalog_empty",
+            hint: "Check dealhealth-api logs and verify each provider API key can call its list-models endpoint.",
+          },
+          503
+        );
+      }
+      return c.json(
+        {
+          error: `Model "${parsed.data.modelId}" is not in the live catalog.`,
+          code: "model_unavailable",
+          hint: "Pick a model from the dropdown for a provider you configured.",
+        },
+        400
+      );
     }
 
     const runId = randomUUID();

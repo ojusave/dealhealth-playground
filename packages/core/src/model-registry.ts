@@ -1,7 +1,6 @@
 import type { ProviderName } from "./models.overrides.js";
 import {
   emptyRegistry,
-  fallbackForProvider,
   filterProviderModels,
   defaultModelId,
   type DiscoveredModel,
@@ -14,12 +13,33 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/models";
 const XAI_LANGUAGE_URL = "https://api.x.ai/v1/language-models";
 const XAI_MODELS_URL = "https://api.x.ai/v1/models";
 
+const PROVIDER_ENV: Record<ProviderName, string> = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  xai: "XAI_API_KEY",
+};
+
+function friendlyFetchError(provider: ProviderName, status?: number, detail?: string): string {
+  const env = PROVIDER_ENV[provider];
+  if (status === 401) return `${env} is invalid or expired.`;
+  if (status === 403) return `${env} lacks permission to list models.`;
+  if (status === 429) return `${provider} rate-limited the model list. Try again shortly.`;
+  if (detail) return detail;
+  if (status) return `Could not fetch ${provider} models (HTTP ${status}).`;
+  return `Could not reach ${provider} to list models.`;
+}
+
 async function fetchOpenAiModels(apiKey: string): Promise<Array<{ id: string; createdAt?: string }>> {
   const res = await fetch(OPENAI_URL, {
     headers: { Authorization: `Bearer ${apiKey}` },
     signal: AbortSignal.timeout(15_000),
   });
-  if (!res.ok) throw new Error(`OpenAI list models failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw Object.assign(new Error(friendlyFetchError("openai", res.status, body.slice(0, 120) || undefined)), {
+      status: res.status,
+    });
+  }
   const body = (await res.json()) as { data?: Array<{ id: string; created?: number }> };
   return (body.data ?? []).map((m) => ({
     id: m.id,
@@ -41,7 +61,12 @@ async function fetchAnthropicModels(apiKey: string): Promise<Array<{ id: string;
       },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) throw new Error(`Anthropic list models failed: ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw Object.assign(new Error(friendlyFetchError("anthropic", res.status, body.slice(0, 120) || undefined)), {
+        status: res.status,
+      });
+    }
     const body = (await res.json()) as {
       data?: Array<{ id: string; created_at?: string }>;
       has_more?: boolean;
@@ -62,7 +87,12 @@ async function fetchXaiModels(apiKey: string): Promise<Array<{ id: string; creat
   if (!res.ok) {
     res = await fetch(XAI_MODELS_URL, { headers, signal: AbortSignal.timeout(15_000) });
   }
-  if (!res.ok) throw new Error(`xAI list models failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw Object.assign(new Error(friendlyFetchError("xai", res.status, body.slice(0, 120) || undefined)), {
+      status: res.status,
+    });
+  }
   const body = (await res.json()) as {
     models?: Array<{ id: string; created?: number }>;
     data?: Array<{ id: string }>;
@@ -107,30 +137,45 @@ export class ModelRegistry {
     return this.snapshot;
   }
 
+  configuredProviders(): ProviderName[] {
+    return (Object.entries(this.keys) as Array<[ProviderName, string | undefined]>)
+      .filter(([, key]) => Boolean(key?.trim()))
+      .map(([name]) => name);
+  }
+
+  availableModels(): DiscoveredModel[] {
+    return this.configuredProviders().flatMap((p) => this.snapshot.providers[p].models);
+  }
+
   findModel(modelId: string): DiscoveredModel | undefined {
-    for (const provider of Object.values(this.snapshot.providers)) {
-      const hit = provider.models.find((m) => m.id === modelId);
-      if (hit) return hit;
-    }
-    return undefined;
+    return this.availableModels().find((m) => m.id === modelId);
   }
 
   private async refreshProvider(provider: ProviderName): Promise<ProviderRegistryState> {
     const prev = this.snapshot.providers[provider];
-    const key = this.keys[provider];
+    const key = this.keys[provider]?.trim();
     if (!key) {
-      return { models: fallbackForProvider(provider), fetchedAt: prev.fetchedAt, source: "fallback" };
+      return { configured: false, models: [], fetchedAt: null, source: "unavailable" };
     }
     try {
       const raw = await FETCHERS[provider](key);
       const models = filterProviderModels(provider, raw);
-      if (models.length === 0) throw new Error("No models after filter");
-      return { models, fetchedAt: new Date().toISOString(), source: "live" };
-    } catch {
-      if (prev.models.length > 0 && prev.source !== "fallback") {
-        return { ...prev, source: "stale" };
+      if (models.length === 0) {
+        throw new Error("No chat models matched the include filter after listing.");
       }
-      return { models: fallbackForProvider(provider), fetchedAt: prev.fetchedAt, source: "fallback" };
+      return { configured: true, models, fetchedAt: new Date().toISOString(), source: "live" };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (prev.configured && prev.models.length > 0 && prev.source === "live") {
+        return { ...prev, source: "stale", error: message };
+      }
+      return {
+        configured: true,
+        models: [],
+        fetchedAt: prev.fetchedAt,
+        source: "unavailable",
+        error: message,
+      };
     }
   }
 
@@ -140,10 +185,10 @@ export class ModelRegistry {
       this.refreshProvider("anthropic"),
       this.refreshProvider("xai"),
     ]);
-    const all = [...openai.models, ...anthropic.models, ...xai.models];
+    const available = [...openai.models, ...anthropic.models, ...xai.models];
     this.snapshot = {
       providers: { openai, anthropic, xai },
-      defaultModelId: defaultModelId(all),
+      defaultModelId: available.length ? defaultModelId(available) : "",
     };
   }
 }

@@ -1,4 +1,5 @@
 import { Render } from "@renderinc/sdk";
+import { formatUnknown } from "./format-error.js";
 import type { RunStore } from "./run-store.js";
 
 function taskInputDimension(input: unknown): string | undefined {
@@ -67,9 +68,10 @@ export async function pollStaleRuns(
     try {
       const details = await render.workflows.getTaskRun(stale.renderRootTaskRunId);
       if (details.status === "failed" || details.status === "canceled") {
+        const workflowError = formatUnknown(details.error);
         store.markFailed(
           stale.runId,
-          details.error ?? "The workflow run failed. Check the Render Dashboard for details."
+          workflowError || "The workflow run failed. Check the Render Dashboard for details."
         );
       } else if (details.status === "completed" && details.results?.[0]) {
         store.applyEvent({
