@@ -52,23 +52,7 @@ Deal Review is a reference application for parallel AI work on Render Workflows.
 
 ## How a review runs
 
-```text
-Browser
-  │  POST /api/analyze
-  ▼
-Render Web Service ─────────────── progress snapshots ──────────────┐
-  │                                                                 │
-  │  startTask                                                      │
-  ▼                                                                 │
-analyzeOpportunity                                                  │
-  ├── Momentum ─────────────────────────────────────────────────────┤
-  ├── Qualification ────────────────────────────────────────────────┤
-  ├── Technical & Security ─────────────────────────────────────────┤
-  ├── Commercial Readiness ─────────────────────────────────────────┤
-  └── Execution Alignment ──────────────────────────────────────────┤
-             │                                                      │
-             └── synthesize report ──► SSE + polling fallback ─────► UI
-```
+![How a review runs](web/public/how-a-review-runs.gif)
 
 The API returns `202` as soon as the run is accepted. Render Workflows executes the five dimension tasks in parallel, retries failed task attempts, and keeps running if the browser closes.
 
