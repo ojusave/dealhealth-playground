@@ -1,6 +1,6 @@
-import { Anchor, Badge, Box, Container, Group, Image, Text } from "@mantine/core";
-import { GITHUB_URL } from "../constants";
-import { RenderCtas } from "./RenderCtas";
+import { Anchor, Box, Container, Group, Image, Text, UnstyledButton } from "@mantine/core";
+import { DEPLOY_URL, GITHUB_URL } from "../constants";
+import { renderSignupUrlWithUtms } from "../lib/renderSignup";
 
 export function AppHeader() {
   return (
@@ -41,37 +41,37 @@ export function AppFooter({
     mode === "workflows" ? "Workflows" : mode === "simulated" ? "Simulated" : "Idle";
 
   return (
-    <Group justify="center" gap="md" py="xl" wrap="wrap">
-      <Text
-        component="button"
-        type="button"
-        size="sm"
-        c="dimmed"
-        style={{ background: "none", border: 0, cursor: "pointer", padding: 0 }}
-        onClick={onHowItWorks}
-      >
-        How it works
-      </Text>
-      <Anchor
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer"
-        size="sm"
-        c="dimmed"
-        style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-      >
-        <Image
-          src="https://github.githubassets.com/favicons/favicon.svg"
-          alt=""
-          w={14}
-          h={14}
-        />
-        GitHub
-      </Anchor>
-      <Badge variant="light" color="gray" size="lg">
-        {modeLabel}
-      </Badge>
-      <RenderCtas signupContent="footer_link" size="compact-sm" />
+    <Group justify="space-between" gap="md" px="md" py="sm" wrap="wrap">
+      <Group gap="xs" className="footer-status">
+        <span className={`status-dot status-dot--${mode}`} />
+        <Text size="xs" c="dimmed">{modeLabel} mode</Text>
+      </Group>
+      <Group gap="lg" wrap="wrap">
+        <UnstyledButton className="footer-link" onClick={onHowItWorks}>
+          How it works
+        </UnstyledButton>
+        <Anchor className="footer-link" href={GITHUB_URL} target="_blank" rel="noreferrer">
+          <Image
+            className="github-mark"
+            src="https://github.githubassets.com/favicons/favicon.svg"
+            alt=""
+            w={14}
+            h={14}
+          />
+          GitHub
+        </Anchor>
+        <Anchor className="footer-link" href={DEPLOY_URL} target="_blank" rel="noreferrer">
+          Deploy to Render
+        </Anchor>
+        <Anchor
+          className="footer-link"
+          href={renderSignupUrlWithUtms("footer_link")}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Sign up on Render
+        </Anchor>
+      </Group>
     </Group>
   );
 }

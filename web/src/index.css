@@ -257,6 +257,41 @@ body {
   background: var(--dh-surface);
 }
 
+.footer-status {
+  min-height: 28px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mantine-color-gray-5);
+}
+
+.status-dot--workflows { background: var(--mantine-color-green-6); }
+.status-dot--simulated { background: var(--mantine-color-yellow-6); }
+
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dh-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+.footer-link:hover {
+  color: var(--mantine-color-text);
+  text-decoration: none;
+}
+
+[data-mantine-color-scheme="dark"] .github-mark {
+  filter: invert(1);
+}
+
 .mobile-workspace {
   min-height: calc(100vh - 56px);
 }
