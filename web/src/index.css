@@ -175,16 +175,6 @@ body {
   height: 100%;
 }
 
-.dh-deploy-btn {
-  display: inline-flex;
-  align-items: center;
-  transition: opacity 150ms ease;
-}
-
-.dh-deploy-btn:hover {
-  opacity: 0.9;
-}
-
 .dh-model-pick {
   border: 1px solid var(--dh-border);
   border-radius: var(--mantine-radius-md);

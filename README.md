@@ -37,7 +37,7 @@
 
 ## Overview
 
-Deal Review is a reference application for parallel AI work on [Render Workflows](https://render.com/docs/workflows). Pick a deal and an available OpenAI, Anthropic, or xAI model. The app runs five independent reviews, merges their findings, and produces an analysis report.
+Deal Review is a reference application for parallel AI work on Render Workflows. Pick a deal and an available OpenAI, Anthropic, or xAI model. The app runs five independent reviews, merges their findings, and produces an analysis report.
 
 <table>
   <tr>
@@ -70,7 +70,7 @@ analyzeOpportunity                                                  │
              └── synthesize report ──► SSE + polling fallback ─────► UI
 ```
 
-The API returns `202` as soon as the run is accepted. [Render Workflows](https://render.com/docs/workflows) executes the five dimension tasks in parallel, retries failed task attempts, and keeps running if the browser closes.
+The API returns `202` as soon as the run is accepted. Render Workflows executes the five dimension tasks in parallel, retries failed task attempts, and keeps running if the browser closes.
 
 The API keeps the live viewer state in memory. Restarting it clears that local state, but does not cancel the workflow.
 
@@ -84,13 +84,9 @@ You need:
 
 ### 1. Deploy the API and UI
 
-Create an environment group named `dealhealth-shared` and add your provider keys. Then use the button below. The Blueprint creates a [Render Web Service](https://render.com/docs/web-services) for the API and a [Static Site](https://render.com/docs/static-sites) for the React app.
+Create an environment group named `dealhealth-shared`, add your provider keys, then use the Deploy to Render button at the top of this page. The Blueprint creates a [Render Web Service](https://render.com/docs/web-services) for the API and a [Static Site](https://render.com/docs/static-sites) for the React app.
 
-<a href="https://render.com/deploy?repo=https://github.com/ojusave/dealhealth-playground">
-  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" />
-</a>
-
-Set the prompted values for `RENDER_API_KEY`, `EVENTS_SECRET`, `API_BASE_URL`, `ALLOWED_ORIGIN`, and `VITE_API_BASE_URL`.
+Render prompts for the secrets and service URLs listed under [Configuration](#configuration).
 
 ### 2. Create the Workflow service
 
@@ -142,6 +138,8 @@ pnpm dev
 ```
 
 `pnpm dev` starts the API and frontend. Without `EXECUTION_MODE=workflows`, analysis runs inside the API process.
+
+### Repository layout
 
 ```text
 packages/core/       Contracts, schemas, model adapters, orchestration

@@ -16,7 +16,7 @@ import {
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
 import { AnalysisReport } from "./components/AnalysisReport";
-import { AppFooter } from "./components/AppHeader";
+import { AppFooter } from "./components/AppFooter";
 import { ExecutionTrace } from "./components/ExecutionTrace";
 import { HowItWorksModal } from "./components/HowItWorksModal";
 import { InspectorPanel } from "./components/InspectorPanel";

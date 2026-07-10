@@ -1,34 +1,6 @@
-import { Anchor, Box, Container, Group, Image, Text, UnstyledButton } from "@mantine/core";
+import { Anchor, Group, Image, Text, UnstyledButton } from "@mantine/core";
 import { DEPLOY_URL, GITHUB_URL } from "../constants";
 import { renderSignupUrlWithUtms } from "../lib/renderSignup";
-
-export function AppHeader() {
-  return (
-    <Box className="dh-header">
-      <Container size="lg" py="sm">
-        <Group gap="sm" wrap="nowrap">
-          <Image src="/favicon.svg" alt="" w={22} h={22} />
-          <Text fw={700} size="lg" style={{ letterSpacing: "-0.02em" }}>
-            Deal Review
-          </Text>
-        </Group>
-      </Container>
-    </Box>
-  );
-}
-
-export function AppHero() {
-  return (
-    <Box className="dh-hero">
-      <Text fw={700} size="1.75rem" lh={1.25} mb={6}>
-        Deal Review
-      </Text>
-      <Text c="dimmed" maw={480} size="sm">
-        Score a deal across five dimensions with one model call fan-out.
-      </Text>
-    </Box>
-  );
-}
 
 export function AppFooter({
   mode,
