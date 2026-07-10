@@ -126,12 +126,12 @@ This repo demonstrates how to build a multi-model AI playground using:
 | `API_BASE_URL` | API + Workflow | Public API URL (workflow tasks POST progress here) |
 | `ALLOWED_ORIGIN` | API | Static site URL for CORS |
 | `VITE_API_BASE_URL` | Web (build) | Public API URL baked into the static build |
-| `OPENAI_API_KEY` | Workflow | OpenAI API key for GPT models |
-| `ANTHROPIC_API_KEY` | Workflow | Anthropic API key for Claude models |
-| `XAI_API_KEY` | Workflow | xAI API key for Grok models |
+| `OPENAI_API_KEY` | API + Workflow | OpenAI key: API uses it for live `/v1/models`; workflow uses it for inference |
+| `ANTHROPIC_API_KEY` | API + Workflow | Anthropic key: API uses it for live models list; workflow uses it for inference |
+| `XAI_API_KEY` | API + Workflow | xAI key: API uses it for live models list; workflow uses it for inference |
 | `MODEL_REFRESH_MINUTES` | API | Live model-list refresh interval (default: 15) |
 
-Provider keys on the **workflow service** are required: dimension LLM calls execute there, not on the API.
+Provider keys must be set on **both** the API and workflow services: the API calls each provider's list-models endpoint every `MODEL_REFRESH_MINUTES`; the workflow service runs the actual LLM calls.
 
 ## Model Discovery
 

@@ -46,7 +46,15 @@ export default function App() {
   );
 
   useEffect(() => {
-    void fetchModels().then(setModels).catch(() => setError("Could not load models."));
+    const loadModels = () => {
+      void fetchModels().then(setModels).catch(() => setError("Could not load models."));
+    };
+    loadModels();
+    const id = setInterval(loadModels, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     void fetchSamples()
       .then((s) => {
         setSamples(s);

@@ -7,6 +7,13 @@ const PROVIDER_LABEL: Record<string, string> = {
   xai: "xAI",
 };
 
+function groupLabel(name: string, source: string): string {
+  const base = PROVIDER_LABEL[name] ?? name;
+  if (source === "live") return base;
+  if (source === "stale") return `${base} · stale`;
+  return `${base} · cached`;
+}
+
 export function ModelPicker({
   models,
   value,
@@ -28,7 +35,7 @@ export function ModelPicker({
       aria-label="Model"
     >
       {Object.entries(models.providers).map(([name, group]) => (
-        <optgroup key={name} label={PROVIDER_LABEL[name] ?? name}>
+        <optgroup key={name} label={groupLabel(name, group.source)}>
           {group.models.map((m) => (
             <option key={m.id} value={m.id}>
               {m.label}

@@ -44,6 +44,24 @@ services:
         description: "Required: public dealhealth-web URL for CORS"
         required: true
         sync: false
+      - key: OPENAI_API_KEY
+        displayName: OpenAI API Key (discovery)
+        description: "Required for live OpenAI model list on /api/models. Also set on workflow service for inference."
+        required: true
+        sensitive: true
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        displayName: Anthropic API Key (discovery)
+        description: "Required for live Anthropic model list on /api/models. Also set on workflow service for inference."
+        required: true
+        sensitive: true
+        sync: false
+      - key: XAI_API_KEY
+        displayName: xAI API Key (discovery)
+        description: "Required for live xAI model list on /api/models. Also set on workflow service for inference."
+        required: false
+        sensitive: true
+        sync: false
 
   - type: web
     name: dealhealth-web
