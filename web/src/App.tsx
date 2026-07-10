@@ -25,6 +25,7 @@ import {
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
 import { AppFooter, AppHeader, AppHero } from "./components/AppHeader";
+import { BackendActivity } from "./components/BackendActivity";
 import { DashboardView } from "./components/DashboardView";
 import { FlowBoard } from "./components/flow/FlowBoard";
 import { GanttStrip } from "./components/GanttStrip";
@@ -280,6 +281,7 @@ export default function App() {
                   />
                 )}
                 {showGantt && snapshot && <GanttStrip snapshot={snapshot} />}
+                <BackendActivity snapshot={snapshot} />
               </Stack>
             </SimpleGrid>
             </Box>

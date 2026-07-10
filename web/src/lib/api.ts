@@ -78,9 +78,28 @@ export interface RunSnapshot {
   modelId: string;
   mode: "workflows" | "simulated";
   queuedAt: string;
+  lastEventAt: string;
+  renderRootTaskRunId?: string;
   tasks: TaskNode[];
+  activity: RunActivity[];
   result?: Dashboard;
   error?: string;
+}
+
+export interface RunActivity {
+  type:
+    | "root:running"
+    | "dimension:queued"
+    | "dimension:running"
+    | "dimension:completed"
+    | "dimension:failed"
+    | "aggregate:completed"
+    | "run:failed";
+  timestamp: string;
+  dimension?: string;
+  attempt: number;
+  taskRunId?: string;
+  message?: string;
 }
 
 export interface Dashboard {

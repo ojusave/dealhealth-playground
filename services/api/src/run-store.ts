@@ -18,6 +18,15 @@ export interface TaskNodeState {
   reasoning?: string[];
 }
 
+export interface RunActivity {
+  type: ProgressEvent["type"];
+  timestamp: string;
+  dimension?: string;
+  attempt: number;
+  taskRunId?: string;
+  message?: string;
+}
+
 export interface RunRecord {
   runId: string;
   status: "queued" | "running" | "completed" | "failed";
@@ -28,6 +37,7 @@ export interface RunRecord {
   lastEventAt: string;
   renderRootTaskRunId?: string;
   tasks: TaskNodeState[];
+  activity: RunActivity[];
   result?: Dashboard;
   error?: string;
   listeners: Set<(snapshot: RunSnapshot) => void>;
@@ -38,7 +48,10 @@ export interface RunSnapshot {
   modelId: string;
   mode: RunRecord["mode"];
   queuedAt: string;
+  lastEventAt: string;
+  renderRootTaskRunId?: string;
   tasks: TaskNodeState[];
+  activity: RunActivity[];
   result?: Dashboard;
   error?: string;
 }
@@ -76,6 +89,7 @@ export class RunStore {
         status: "queued",
         attempt: 1,
       })),
+      activity: [],
       listeners: new Set(),
     };
     this.runs.set(input.runId, record);
@@ -96,7 +110,10 @@ export class RunStore {
       modelId: record.modelId,
       mode: record.mode,
       queuedAt: record.queuedAt,
+      lastEventAt: record.lastEventAt,
+      renderRootTaskRunId: record.renderRootTaskRunId,
       tasks: record.tasks,
+      activity: record.activity,
       result: record.result,
       error: record.error,
     };
@@ -123,6 +140,15 @@ export class RunStore {
     record.updatedAt = now;
     record.lastEventAt = now;
     record.status = "running";
+    record.activity.push({
+      type: event.type,
+      timestamp: event.timestamp,
+      dimension: event.dimension,
+      attempt: event.attempt,
+      taskRunId: event.taskRunId,
+      message: event.message,
+    });
+    if (record.activity.length > 100) record.activity.shift();
 
     if (event.type === "root:running") {
       if (event.taskRunId) record.renderRootTaskRunId = event.taskRunId;
