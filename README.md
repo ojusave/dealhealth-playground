@@ -35,6 +35,14 @@
   </a>
 </p>
 
+## How a review runs
+
+![How a review runs](web/public/how-a-review-runs.gif)
+
+The API returns `202` as soon as the run is accepted. Render Workflows executes the five dimension tasks in parallel, retries failed task attempts, and keeps running if the browser closes.
+
+The API keeps the live viewer state in memory. Restarting it clears that local state, but does not cancel the workflow.
+
 ## Overview
 
 Deal Review is a reference application for parallel AI work on Render Workflows. Pick a deal and an available OpenAI, Anthropic, or xAI model. The app runs five independent reviews, merges their findings, and produces an analysis report.
@@ -49,14 +57,6 @@ Deal Review is a reference application for parallel AI work on Render Workflows.
     <td><strong>Provider-aware models</strong><br />Only models backed by configured API keys appear.</td>
   </tr>
 </table>
-
-## How a review runs
-
-![How a review runs](web/public/how-a-review-runs.gif)
-
-The API returns `202` as soon as the run is accepted. Render Workflows executes the five dimension tasks in parallel, retries failed task attempts, and keeps running if the browser closes.
-
-The API keeps the live viewer state in memory. Restarting it clears that local state, but does not cancel the workflow.
 
 ## Deploy on Render
 
