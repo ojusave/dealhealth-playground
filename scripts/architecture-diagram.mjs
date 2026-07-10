@@ -1,6 +1,17 @@
 // Source for web/public/how-a-review-runs.gif — the "How a review runs" diagram.
 // Hand-coded SVG; each invocation emits one HTML frame for a given dash offset,
-// so the flow arrows animate across the 26-frame loop.
+// so the flow arrows animate across the 24-frame loop.
+//
+// Regenerate the GIF (needs Google Chrome + ffmpeg):
+//   mkdir -p frames
+//   for i in $(seq 0 23); do p=$(printf "%02d" $i);
+//     node scripts/architecture-diagram.mjs $i frames/f$p.html;
+//     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
+//       --disable-gpu --hide-scrollbars --window-size=1376,768 \
+//       --screenshot=frames/f$p.png "file://$PWD/frames/f$p.html"; done
+//   ffmpeg -y -framerate 20 -i frames/f%02d.png -vf "palettegen=stats_mode=full" palette.png
+//   ffmpeg -y -framerate 20 -i frames/f%02d.png -i palette.png \
+//     -lavfi "paletteuse=dither=bayer:bayer_scale=3" -loop 0 web/public/how-a-review-runs.gif
 
 const W = 1376, H = 768;
 
