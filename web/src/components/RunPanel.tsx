@@ -13,6 +13,7 @@ export function RunPanel({
   onSelectTask: (task: TaskNode | null, dimension: string) => void;
 }) {
   const eventCount = snapshot?.activity?.length ?? 0;
+  const terminal = snapshot?.status === "completed" || snapshot?.status === "failed";
 
   return (
     <Paper className="dh-panel canvas-panel" p="md">
@@ -21,7 +22,7 @@ export function RunPanel({
           <Tabs.List>
             <Tabs.Tab value="graph">Graph</Tabs.Tab>
             <Tabs.Tab value="activity">
-              Event log
+              {terminal ? "History" : "Event log"}
               {eventCount > 0 && (
                 <Badge size="xs" variant="light" color="gray" ml={6}>
                   {eventCount}

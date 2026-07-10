@@ -22,10 +22,16 @@ function activityColor(type: string): string {
 }
 
 function timeLabel(timestamp: string): string {
-  return new Date(timestamp).toLocaleTimeString([], {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
-  });
+    timeZoneName: "short",
+  }).format(new Date(timestamp));
+}
+
+function viewerTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 export function BackendActivity({
@@ -36,6 +42,7 @@ export function BackendActivity({
   embedded?: boolean;
 }) {
   const events = snapshot?.activity ?? [];
+  const terminal = snapshot?.status === "completed" || snapshot?.status === "failed";
 
   const body = (
     <Stack gap="md">
@@ -51,6 +58,14 @@ export function BackendActivity({
           )}
         </Group>
       )}
+
+      {snapshot ? (
+        <Text size="xs" c="dimmed">
+          {terminal
+            ? `Run ${snapshot.status} at ${timeLabel(snapshot.lastEventAt)}. The entries below are history.`
+            : `Times are shown in your local timezone: ${viewerTimeZone()}.`}
+        </Text>
+      ) : null}
 
       {!snapshot ? (
         <Text size="sm" c="dimmed">
