@@ -73,19 +73,6 @@ export interface TaskNode {
   reasoning?: string[];
 }
 
-export interface RunSnapshot {
-  status: string;
-  modelId: string;
-  mode: "workflows" | "simulated";
-  queuedAt: string;
-  lastEventAt: string;
-  renderRootTaskRunId?: string;
-  tasks: TaskNode[];
-  activity: RunActivity[];
-  result?: Dashboard;
-  error?: string;
-}
-
 export interface RunActivity {
   type:
     | "root:running"
@@ -100,6 +87,19 @@ export interface RunActivity {
   attempt: number;
   taskRunId?: string;
   message?: string;
+}
+
+export interface RunSnapshot {
+  status: string;
+  modelId: string;
+  mode: "workflows" | "simulated";
+  queuedAt: string;
+  lastEventAt?: string;
+  renderRootTaskRunId?: string;
+  tasks: TaskNode[];
+  activity?: RunActivity[];
+  result?: Dashboard;
+  error?: string;
 }
 
 export interface Dashboard {
@@ -221,65 +221,106 @@ export async function startAnalysis(
   return { runId: body.runId! };
 }
 
+async function fetchRunSnapshot(runId: string): Promise<RunSnapshot> {
+  const res = await fetch(`${API_BASE}/api/runs/${runId}`);
+  if (!res.ok) throw await parseApiError(res, "Could not load run");
+  return res.json();
+}
+
+function handleSnapshot(
+  snap: RunSnapshot,
+  onUpdate: (snap: RunSnapshot) => void,
+  onError: (err: AppError) => void
+): boolean {
+  onUpdate(snap);
+  if (snap.status === "failed" && snap.error) {
+    onError({
+      title: "Analysis failed",
+      message: snap.error,
+      hint: "Check workflow logs on Render and provider keys on dealhealth-workflows.",
+      code: "run_failed",
+    });
+  }
+  return snap.status === "completed" || snap.status === "failed";
+}
+
+/**
+ * Follow a run until it finishes.
+ * Polling is the source of truth; SSE is an optional fast path.
+ * Previous EventSource-only flow closed on the first stream error and left the UI stuck on queued.
+ */
 export function subscribeRun(
   runId: string,
   onUpdate: (snap: RunSnapshot) => void,
   onError: (err: AppError) => void
 ): () => void {
-  const es = new EventSource(`${API_BASE}/api/runs/${runId}/stream`);
-  es.onmessage = (ev) => {
+  let stopped = false;
+  let es: EventSource | null = null;
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  const stop = () => {
+    stopped = true;
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+    es?.close();
+    es = null;
+  };
+
+  const apply = (snap: RunSnapshot) => {
+    if (stopped) return;
+    if (handleSnapshot(snap, onUpdate, onError)) stop();
+  };
+
+  const poll = async () => {
+    if (stopped) return;
     try {
-      const data = JSON.parse(ev.data) as RunSnapshot & { error?: string };
-      if (data.error) {
-        onError({
-          title: "Run expired",
-          message: data.error,
-          hint: "Start a new analysis from the controls above.",
-        });
-        es.close();
-        return;
-      }
-      onUpdate(data);
-      if (data.status === "failed" && data.error) {
-        onError({
-          title: "Analysis failed",
-          message: data.error,
-          hint: "Check workflow logs on Render and provider keys on dealhealth-workflows.",
-          code: "run_failed",
-        });
-      }
-      if (data.status === "completed" || data.status === "failed") es.close();
-    } catch {
-      onError({
-        title: "Update error",
-        message: "Could not read the live run stream.",
-        hint: "Refresh the page or try again.",
-      });
-      es.close();
+      const snap = await fetchRunSnapshot(runId);
+      apply(snap);
+    } catch (err) {
+      if (stopped) return;
+      const appErr = (err as AppError)?.title
+        ? (err as AppError)
+        : {
+            title: "Connection lost",
+            message: "Could not refresh run status from the API.",
+            hint: "The workflow may still finish on Render. Refresh and try again.",
+          };
+      // Keep polling through transient errors; only surface once if we never recover.
+      if (!pollTimer) onError(appErr);
     }
   };
-  es.onerror = () => {
-    void fetch(`${API_BASE}/api/runs/${runId}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((snap: RunSnapshot) => {
-        onUpdate(snap);
-        if (snap.status === "failed" && snap.error) {
+
+  void poll();
+  pollTimer = setInterval(() => void poll(), 1500);
+
+  try {
+    es = new EventSource(`${API_BASE}/api/runs/${runId}/stream`);
+    es.onmessage = (ev) => {
+      if (stopped) return;
+      try {
+        const data = JSON.parse(ev.data) as RunSnapshot & { error?: string };
+        if (data.error) {
           onError({
-            title: "Analysis failed",
-            message: snap.error,
-            hint: "Check workflow logs on Render.",
-            code: "run_failed",
+            title: "Run expired",
+            message: data.error,
+            hint: "Start a new analysis from the controls above.",
           });
+          stop();
+          return;
         }
-      })
-      .catch(() =>
-        onError({
-          title: "Connection lost",
-          message: "Lost the live stream to this run.",
-          hint: "Refresh the page. The workflow may still finish on Render.",
-        })
-      );
-    es.close();
-  };
-  return () => es.close();
+        apply(data);
+      } catch {
+        // Ignore malformed SSE frames; polling continues.
+      }
+    };
+    es.onerror = () => {
+      // Do not stop. Polling remains the reliable path across CORS/proxy SSE drops.
+      es?.close();
+      es = null;
+    };
+  } catch {
+    // EventSource unavailable; polling alone is enough.
+  }
+
+  return stop;
 }

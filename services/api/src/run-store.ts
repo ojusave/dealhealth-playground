@@ -134,12 +134,20 @@ export class RunStore {
 
   applyEvent(event: ProgressEvent): void {
     const record = this.runs.get(event.runId);
-    if (!record) return;
+    if (!record) {
+      console.warn(
+        `[run-store] Dropped ${event.type} for unknown run ${event.runId}` +
+          (event.dimension ? ` (${event.dimension})` : "")
+      );
+      return;
+    }
 
     const now = event.timestamp;
     record.updatedAt = now;
     record.lastEventAt = now;
-    record.status = "running";
+    if (event.type !== "run:failed" && event.type !== "aggregate:completed") {
+      record.status = "running";
+    }
     record.activity.push({
       type: event.type,
       timestamp: event.timestamp,
@@ -217,10 +225,14 @@ export class RunStore {
   }
 
   staleRuns(): Array<{ runId: string; renderRootTaskRunId?: string; lastEventAt: string }> {
-    const cutoff = Date.now() - 120_000;
+    // Recover sooner: SSE drops and missed callbacks should not leave the UI queued forever.
+    const cutoff = Date.now() - 20_000;
     const out: Array<{ runId: string; renderRootTaskRunId?: string; lastEventAt: string }> = [];
     for (const record of this.runs.values()) {
-      if (record.status === "running" && Date.parse(record.lastEventAt) < cutoff) {
+      if (
+        (record.status === "running" || record.status === "queued") &&
+        Date.parse(record.lastEventAt) < cutoff
+      ) {
         out.push({
           runId: record.runId,
           renderRootTaskRunId: record.renderRootTaskRunId,
