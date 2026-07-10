@@ -1,15 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
-
 :root {
   --dh-page-bg: #f6f7fb;
   --dh-surface: #ffffff;
   --dh-border: #e5e7ef;
   --dh-muted: #6b7280;
-  --dh-hero-gradient: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.08) 0%,
-    rgba(255, 255, 255, 0) 55%
-  );
 }
 
 body {
@@ -27,16 +20,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--dh-border);
 }
 
 .dh-hero {
-  background: var(--dh-hero-gradient);
-  border: 1px solid var(--dh-border);
-  border-radius: var(--mantine-radius-lg);
-  padding: var(--mantine-spacing-xl);
+  padding: 0.25rem 0 0.5rem;
 }
 
 .dh-section-title {

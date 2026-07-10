@@ -25,15 +25,13 @@ import {
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
 import { AppFooter, AppHeader, AppHero } from "./components/AppHeader";
-import { BackendActivity } from "./components/BackendActivity";
 import { DashboardView } from "./components/DashboardView";
-import { FlowBoard } from "./components/flow/FlowBoard";
-import { GanttStrip } from "./components/GanttStrip";
 import { HowItWorksModal } from "./components/HowItWorksModal";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
 import { RenderCtas } from "./components/RenderCtas";
+import { RunPanel } from "./components/RunPanel";
 import { TaskInspector } from "./components/TaskInspector";
 
 export default function App() {
@@ -176,23 +174,19 @@ export default function App() {
 
   const analyzeLabel = running
     ? dispatching
-      ? "Dispatching to Render Workflows…"
-      : "Running analysis…"
+      ? "Starting…"
+      : "Running…"
     : `Analyze with ${selectedLabel}`;
 
   const completedTasks =
     snapshot?.tasks.filter((task) => task.status === "completed").length ?? 0;
   const failedTasks = snapshot?.tasks.filter((task) => task.status === "failed").length ?? 0;
   const progressLabel = dispatching
-    ? "Workflow dispatched. Waiting for the first task update…"
+    ? "Dispatching…"
     : running
-      ? `${completedTasks} of 5 dimensions complete${
-          failedTasks ? ` · ${failedTasks} failed` : ""
-        }`
+      ? `${completedTasks}/5 done${failedTasks ? ` · ${failedTasks} failed` : ""}`
       : null;
 
-  const showGantt = snapshot?.status === "completed";
-  const showBoard = !showGantt;
   const showDashboard = Boolean(snapshot?.result);
 
   return (
@@ -215,75 +209,68 @@ export default function App() {
             <LoadingSkeleton />
           ) : (
             <Box ref={formRef}>
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-              <Stack gap="lg">
-                <ModelPicker
-                  models={models}
-                  value={modelId}
-                  onChange={setModelId}
-                  disabled={!allModelIds.length || running}
+              <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+                <Stack gap="lg">
+                  {opportunity && (
+                    <OpportunityForm
+                      samples={samples}
+                      value={opportunity}
+                      onChange={setOpportunity}
+                    />
+                  )}
+
+                  <ModelPicker
+                    models={models}
+                    value={modelId}
+                    onChange={setModelId}
+                    disabled={!allModelIds.length || running}
+                  />
+
+                  <Button
+                    size="lg"
+                    fullWidth
+                    loading={running}
+                    disabled={!canAnalyze}
+                    onClick={() => void analyze()}
+                  >
+                    {analyzeLabel}
+                  </Button>
+                  {progressLabel && (
+                    <Text size="sm" c="dimmed" ta="center">
+                      {progressLabel}
+                    </Text>
+                  )}
+
+                  {compareMode && (
+                    <Text size="sm" c="dimmed" ta="center">
+                      Change the model, then analyze again.
+                    </Text>
+                  )}
+
+                  {catalogError && !running && (
+                    <Alert color="yellow" variant="light" title={catalogError.title}>
+                      {catalogError.message}
+                    </Alert>
+                  )}
+
+                  {rateLimitAlert && (
+                    <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
+                      {rateLimitAlert.message}
+                      {rateLimitAlert.hint && (
+                        <Text size="sm" mt="xs" c="dimmed">
+                          {rateLimitAlert.hint}
+                        </Text>
+                      )}
+                    </Alert>
+                  )}
+                </Stack>
+
+                <RunPanel
+                  snapshot={snapshot}
+                  company={opportunity?.company ?? "Deal"}
+                  onSelectTask={handleSelectTask}
                 />
-
-                {opportunity && (
-                  <OpportunityForm
-                    samples={samples}
-                    value={opportunity}
-                    onChange={setOpportunity}
-                  />
-                )}
-
-                <Button
-                  size="lg"
-                  fullWidth
-                  loading={running}
-                  disabled={!canAnalyze}
-                  onClick={() => void analyze()}
-                >
-                  {analyzeLabel}
-                </Button>
-                {progressLabel && (
-                  <Text size="sm" c="dimmed" ta="center">
-                    {progressLabel}
-                  </Text>
-                )}
-
-                {compareMode && (
-                  <Text size="sm" c="dimmed" ta="center">
-                    Pick another model, then run analyze again.
-                  </Text>
-                )}
-
-                {catalogError && !running && (
-                  <Alert color="yellow" variant="light" title={catalogError.title}>
-                    {catalogError.message}
-                  </Alert>
-                )}
-
-                {rateLimitAlert && (
-                  <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
-                    {rateLimitAlert.message}
-                    {rateLimitAlert.hint && (
-                      <Text size="sm" mt="xs" c="dimmed">
-                        {rateLimitAlert.hint}
-                      </Text>
-                    )}
-                  </Alert>
-                )}
-              </Stack>
-
-              <Stack gap="md">
-                {showBoard && (
-                  <FlowBoard
-                    snapshot={snapshot}
-                    idle={!snapshot}
-                    company={opportunity?.company ?? "Deal"}
-                    onSelectTask={handleSelectTask}
-                  />
-                )}
-                {showGantt && snapshot && <GanttStrip snapshot={snapshot} />}
-                <BackendActivity snapshot={snapshot} />
-              </Stack>
-            </SimpleGrid>
+              </SimpleGrid>
             </Box>
           )}
 

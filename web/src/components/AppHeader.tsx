@@ -9,11 +9,7 @@ export function AppHeader({
   onHowItWorks: () => void;
 }) {
   const modeLabel =
-    mode === "workflows"
-      ? "Render Workflows"
-      : mode === "simulated"
-        ? "Local simulation"
-        : "Ready";
+    mode === "workflows" ? "Workflows" : mode === "simulated" ? "Simulated" : "Idle";
 
   return (
     <Box className="dh-header">
@@ -37,7 +33,7 @@ export function AppHeader({
               How it works
             </Text>
             <GitHubLink />
-            <Badge variant="light" color="indigo" size="lg">
+            <Badge variant="light" color="gray" size="lg">
               {modeLabel}
             </Badge>
             <RenderCtas signupContent="navbar_button" />
@@ -51,12 +47,11 @@ export function AppHeader({
 export function AppHero() {
   return (
     <Box className="dh-hero">
-      <Text fw={700} size="2rem" lh={1.2} mb="xs">
-        AI deal health, fan-out on Render Workflows
+      <Text fw={700} size="1.75rem" lh={1.25} mb={6}>
+        DealHealth
       </Text>
-      <Text c="dimmed" maw={560} size="sm">
-        Pick a model, choose a sample opportunity, and watch five parallel dimension tasks run as
-        isolated workflow steps. Results merge into one scored dashboard.
+      <Text c="dimmed" maw={480} size="sm">
+        Score a deal across five dimensions with one model call fan-out.
       </Text>
     </Box>
   );
@@ -66,20 +61,6 @@ export function AppFooter() {
   return (
     <Group justify="center" gap="lg" py="xl">
       <GitHubLink />
-      <Text size="sm" c="dimmed">
-        ·
-      </Text>
-      <Text
-        component="a"
-        href="https://render.com/docs/workflows"
-        target="_blank"
-        rel="noreferrer"
-        size="sm"
-        c="dimmed"
-        style={{ textDecoration: "none" }}
-      >
-        Render Workflows docs
-      </Text>
     </Group>
   );
 }

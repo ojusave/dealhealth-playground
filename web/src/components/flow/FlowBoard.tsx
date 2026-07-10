@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -7,7 +7,7 @@ import {
   type Node,
   type NodeMouseHandler,
 } from "@xyflow/react";
-import { Group, Paper, Stack, Text, Title } from "@mantine/core";
+import { Group, Stack, Text, Title } from "@mantine/core";
 import { DIMENSIONS } from "../../constants";
 import type { RunSnapshot, TaskNode } from "../../lib/api";
 import { FlowNode, type FlowNodeData } from "./FlowNodes";
@@ -103,19 +103,20 @@ function buildGraph(
     const task = taskByDim.get(dim);
     const status = task?.status ?? "queued";
     const running = status === "running";
-    const rootEdge = {
-      id: `root-dim-${i}`,
-      source: "root",
-      target: `dim-${i}`,
-      ...edgeStyle(status, running),
-    };
-    const aggEdge = {
-      id: `dim-${i}-agg`,
-      source: `dim-${i}`,
-      target: "aggregate",
-      ...edgeStyle(status, running),
-    };
-    return [rootEdge, aggEdge];
+    return [
+      {
+        id: `root-dim-${i}`,
+        source: "root",
+        target: `dim-${i}`,
+        ...edgeStyle(status, running),
+      },
+      {
+        id: `dim-${i}-agg`,
+        source: `dim-${i}`,
+        target: "aggregate",
+        ...edgeStyle(status, running),
+      },
+    ];
   });
 
   return { nodes, edges };
@@ -126,11 +127,13 @@ export function FlowBoard({
   idle,
   company,
   onSelectTask,
+  embedded = false,
 }: {
   snapshot: RunSnapshot | null;
   idle: boolean;
   company: string;
   onSelectTask: (task: TaskNode | null, dimension: string) => void;
+  embedded?: boolean;
 }) {
   const { nodes, edges } = useMemo(
     () => buildGraph(snapshot, idle, company),
@@ -151,51 +154,51 @@ export function FlowBoard({
     [idle, snapshot, onSelectTask]
   );
 
-  const caption =
-    snapshot?.mode === "simulated"
-      ? "Simulated locally with the same code."
-      : "Each card is an isolated task run on Render Workflows. Close the tab; the run finishes anyway.";
-
-  return (
-    <Paper className="dh-panel dh-flow-shell" p="md">
-      <Stack gap="md">
+  const body = (
+    <Stack gap="sm">
+      {!embedded && (
         <Group justify="space-between" align="flex-end">
-          <Stack gap={2}>
-            <Text className="dh-section-title">Workflow fan-out</Text>
-            <Title order={3} fw={600}>
-              {idle ? "Waiting for analysis" : company}
-            </Title>
-          </Stack>
+          <Title order={3} fw={600}>
+            {idle ? "Run graph" : company}
+          </Title>
           {!idle && snapshot?.status && (
             <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
               {snapshot.status}
             </Text>
           )}
         </Group>
-        <div className="dh-flow-canvas">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={NODE_TYPES}
-            onNodeClick={onNodeClick}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            elementsSelectable
-            panOnDrag={false}
-            zoomOnScroll={false}
-            zoomOnPinch={false}
-            preventScrolling={false}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
-            proOptions={{ hideAttribution: true }}
-          >
-            <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
-          </ReactFlow>
-        </div>
-        <Text size="sm" c="dimmed">
-          {idle ? "Run an analysis to see tasks fan out in parallel." : caption}
+      )}
+      {embedded && (
+        <Text size="sm" fw={600}>
+          {idle ? "Idle" : company}
         </Text>
-      </Stack>
-    </Paper>
+      )}
+      <div className="dh-flow-canvas dh-flow-shell">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={NODE_TYPES}
+          onNodeClick={onNodeClick}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable
+          panOnDrag={false}
+          zoomOnScroll={false}
+          zoomOnPinch={false}
+          preventScrolling={false}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
+        </ReactFlow>
+      </div>
+      <Text size="xs" c="dimmed">
+        {idle ? "Click Analyze to start." : "Click a dimension for details."}
+      </Text>
+    </Stack>
   );
+
+  if (embedded) return body;
+  return <div className="dh-panel" style={{ padding: "var(--mantine-spacing-md)" }}>{body}</div>;
 }

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Group, Paper, Stack, Text } from "@mantine/core";
+import { Group, Stack, Text } from "@mantine/core";
 import type { RunSnapshot } from "../lib/api";
 
 function barTone(score?: number, failed?: boolean): string {
@@ -11,16 +11,28 @@ function barTone(score?: number, failed?: boolean): string {
 }
 
 const LEGEND = [
-  { tone: "healthy", label: "Healthy (70+)" },
-  { tone: "atrisk", label: "At risk (45–69)" },
-  { tone: "critical", label: "Critical (<45)" },
+  { tone: "healthy", label: "70+" },
+  { tone: "atrisk", label: "45–69" },
+  { tone: "critical", label: "<45" },
 ] as const;
 
-export function GanttStrip({ snapshot }: { snapshot: RunSnapshot }) {
+export function GanttStrip({
+  snapshot,
+  embedded = false,
+}: {
+  snapshot: RunSnapshot;
+  embedded?: boolean;
+}) {
   const { wallMs, computeMs, bars } = useMemo(() => {
     const starts = snapshot.tasks.map((t) => t.startedAt).filter(Boolean) as string[];
     const ends = snapshot.tasks.map((t) => t.finishedAt).filter(Boolean) as string[];
-    if (!starts.length) return { wallMs: 0, computeMs: 0, bars: [] as Array<{ left: number; width: number; label: string; tone: string }> };
+    if (!starts.length) {
+      return {
+        wallMs: 0,
+        computeMs: 0,
+        bars: [] as Array<{ left: number; width: number; label: string; tone: string }>,
+      };
+    }
 
     const t0 = Math.min(...starts.map(Date.parse));
     const t1 = Math.max(...ends.map(Date.parse), Date.now());
@@ -41,34 +53,39 @@ export function GanttStrip({ snapshot }: { snapshot: RunSnapshot }) {
 
   if (!bars.length) return null;
 
-  return (
-    <Paper className="dh-panel" p="md">
-      <Stack gap="sm">
-        <Text className="dh-section-title">Parallelism</Text>
-        <Text size="sm" c="dimmed">
-          {(computeMs / 1000).toFixed(1)}s of compute in {(wallMs / 1000).toFixed(1)}s of wall time
+  const body = (
+    <Stack gap="sm">
+      {!embedded && (
+        <Text fw={600} size="sm">
+          Timing
         </Text>
-        <div className="gantt-track">
-          {bars.map((b) => (
-            <div
-              key={b.label}
-              className={`gantt-bar gantt-bar--${b.tone}`}
-              style={{ left: `${b.left}%`, width: `${b.width}%` }}
-              title={b.label}
-            />
-          ))}
-        </div>
-        <Group gap="md">
-          {LEGEND.map((item) => (
-            <Group key={item.tone} gap={6}>
-              <span className={`gantt-legend gantt-legend--${item.tone}`} />
-              <Text size="xs" c="dimmed">
-                {item.label}
-              </Text>
-            </Group>
-          ))}
-        </Group>
-      </Stack>
-    </Paper>
+      )}
+      <Text size="sm" c="dimmed">
+        {(computeMs / 1000).toFixed(1)}s compute · {(wallMs / 1000).toFixed(1)}s wall
+      </Text>
+      <div className="gantt-track">
+        {bars.map((b) => (
+          <div
+            key={b.label}
+            className={`gantt-bar gantt-bar--${b.tone}`}
+            style={{ left: `${b.left}%`, width: `${b.width}%` }}
+            title={b.label}
+          />
+        ))}
+      </div>
+      <Group gap="md">
+        {LEGEND.map((item) => (
+          <Group key={item.tone} gap={6}>
+            <span className={`gantt-legend gantt-legend--${item.tone}`} />
+            <Text size="xs" c="dimmed">
+              {item.label}
+            </Text>
+          </Group>
+        ))}
+      </Group>
+    </Stack>
   );
+
+  if (embedded) return body;
+  return <div className="dh-panel" style={{ padding: "var(--mantine-spacing-md)" }}>{body}</div>;
 }
