@@ -1,17 +1,6 @@
 // Source for web/public/how-a-review-runs.gif — the "How a review runs" diagram.
 // Hand-coded SVG; each invocation emits one HTML frame for a given dash offset,
-// so the flow arrows animate across the 24-frame loop.
-//
-// Regenerate the GIF (needs Google Chrome + ffmpeg):
-//   mkdir -p frames
-//   for i in $(seq 0 23); do p=$(printf "%02d" $i);
-//     node scripts/architecture-diagram.mjs $i frames/f$p.html;
-//     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
-//       --disable-gpu --hide-scrollbars --window-size=1376,768 \
-//       --screenshot=frames/f$p.png "file://$PWD/frames/f$p.html"; done
-//   ffmpeg -y -framerate 20 -i frames/f%02d.png -vf "palettegen=stats_mode=full" palette.png
-//   ffmpeg -y -framerate 20 -i frames/f%02d.png -i palette.png \
-//     -lavfi "paletteuse=dither=bayer:bayer_scale=3" -loop 0 web/public/how-a-review-runs.gif
+// so the flow arrows animate across the 26-frame loop.
 
 const W = 1376, H = 768;
 
@@ -24,7 +13,7 @@ const C = {
 
 // Brand logo path data (all viewBox 0 0 24 24, single path).
 const LOGO = {
-  render: "M18.263.007c-3.121-.147-5.744 2.109-6.192 5.082-.018.138-.045.272-.067.405-.696 3.703-3.936 6.507-7.827 6.507-1.388 0-2.691-.356-3.825-.979a.2024.2024 0 0 0-.302.178V24H12v-8.999c0-1.656 1.338-3 2.987-3h2.988c3.382 0 6.103-2.817 5.97-6.244-.12-3.084-2.61-5.603-5.682-5.75",
+  render: "m17.1491 1.50583c-2.6812-.1262-4.9358 1.81264-5.3205 4.36717-.0152.11854-.0381.23327-.0571.34799-.5979 3.18169-3.38195 5.59091-6.7258 5.59091-1.19206 0-2.31175-.3059-3.28672-.8413-.11807-.065-.25898.0191-.25898.1529v.6846 10.3137h10.2677v-7.7324c0-1.4226 1.1501-2.5775 2.5669-2.5775h2.5669c2.9059 0 5.2443-2.42069 5.13-5.36528-.1028-2.65013-2.2431-4.8146-4.8824-4.94079z",
   openai: "M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z",
   anthropic: "M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z",
   xai: "M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z",
@@ -99,27 +88,29 @@ function frame(offset) {
 
     <rect width="${W}" height="${H}" fill="url(#bg)" />
     <text x="${W / 2}" y="60" class="title">How a review runs</text>
-    <text x="${W / 2}" y="92" class="subtitle">One deal fans out to five parallel reviews on Render Workflows, then merges into one report</text>
+    <text x="${W / 2}" y="92" class="subtitle">Five reviews run in parallel, then merge into a single report</text>
 
     <!-- connectors first (under cards) -->
     ${fanOut}
     ${fanIn}
     ${flow(`M${BROWSER.x + BROWSER.w} ${cy(BROWSER)} H ${API.x}`, C.purple, "aPurple")}
     ${flow(`M${cx(API)} ${API.y + API.h} V ${HERO.y}`, C.blue, "aBlue")}
-    ${flow(`M${cx({ x: REV.x, w: REV.w })} ${revY(4) + REV.h} V ${MODELS.y}`, C.gold, "aGold")}
+    <!-- reviews-as-a-group bracket, then animated stem into the models card -->
+    <path d="M${REV.x + 12} 574 V 604 H ${REV.x + REV.w - 12} V 574" fill="none" stroke="${C.gold}" stroke-width="2" opacity="0.6" />
+    ${flow(`M${REV.x + REV.w / 2} 604 V ${MODELS.y}`, C.gold, "aGold")}
 
     <!-- CLIENT -->
     <text x="${cx(BROWSER)}" y="${BROWSER.y - 14}" class="eyebrow">CLIENT</text>
     <g filter="url(#shadow)"><rect x="${BROWSER.x}" y="${BROWSER.y}" width="${BROWSER.w}" height="${BROWSER.h}" rx="18" fill="#1B1230" stroke="${C.purple}" stroke-width="2.5" />
       <text x="${cx(BROWSER)}" y="${BROWSER.y + 58}" class="card">Browser</text>
-      <text x="${cx(BROWSER)}" y="${BROWSER.y + 86}" class="body">picks a deal + model</text></g>
+      <text x="${cx(BROWSER)}" y="${BROWSER.y + 86}" class="body">picks a deal and model</text></g>
 
     <!-- API -->
     <text x="${cx(API)}" y="${API.y - 14}" class="eyebrow">RENDER · WEB SERVICE</text>
     <g filter="url(#shadow)"><rect x="${API.x}" y="${API.y}" width="${API.w}" height="${API.h}" rx="18" fill="#12263F" stroke="${C.blue}" stroke-width="2.5" />
       ${logo("render", API.x + 40, API.y + 52, 26, C.blue)}
       <text x="${cx(API) + 16}" y="${API.y + 60}" class="card">API</text>
-      <text x="${cx(API)}" y="${API.y + 90}" class="body">starts the run · streams SSE</text></g>
+      <text x="${cx(API)}" y="${API.y + 90}" class="body">starts and streams the run</text></g>
 
     <!-- HERO -->
     <g filter="url(#shadow)"><rect x="${HERO.x}" y="${HERO.y}" width="${HERO.w}" height="${HERO.h}" rx="20" fill="#2A1E48" stroke="${C.violet}" stroke-width="3" />
@@ -135,10 +126,9 @@ function frame(offset) {
     <text x="${cx(REPORT)}" y="${REPORT.y - 14}" class="eyebrow">SYNTHESIZE</text>
     <g filter="url(#shadow)"><rect x="${REPORT.x}" y="${REPORT.y}" width="${REPORT.w}" height="${REPORT.h}" rx="20" fill="#0E2E38" stroke="${C.teal}" stroke-width="3" />
       <text x="${cx(REPORT)}" y="${REPORT.y + 66}" class="card">Report</text>
-      <text x="${cx(REPORT)}" y="${REPORT.y + 96}" class="body">merged findings + score</text></g>
+      <text x="${cx(REPORT)}" y="${REPORT.y + 96}" class="body">findings, risks, and a score</text></g>
 
     <!-- MODELS -->
-    <text x="${MODELS.x + MODELS.w / 2}" y="${MODELS.y - 16}" class="eyebrow">AI MODELS</text>
     <g filter="url(#shadow)"><rect x="${MODELS.x}" y="${MODELS.y}" width="${MODELS.w}" height="${MODELS.h}" rx="18" fill="#241C0C" stroke="${C.gold}" stroke-width="2.5" />
       ${logo("openai", mx0, mLogoY, 26, C.ink)}
       ${logo("anthropic", mx1, mLogoY, 26, C.ink)}
