@@ -35,26 +35,38 @@ function extractJson(text: string): string {
 async function callOpenAi(input: CallModelInput, apiKey: string, retryHint?: string): Promise<string> {
   const client = new OpenAI({ apiKey, timeout: TIMEOUT_MS });
   const user = retryHint ? `${input.user}\n\nPrevious validation error: ${retryHint}` : input.user;
-  const response = await client.responses.create({
+  const base = {
     model: input.modelId,
     input: [
-      { role: "system", content: input.system },
-      { role: "user", content: user },
+      { role: "system" as const, content: input.system },
+      { role: "user" as const, content: user },
     ],
-    temperature: 0.2,
     max_output_tokens: input.maxTokens,
     text: {
       format: {
-        type: "json_schema",
+        type: "json_schema" as const,
         name: input.schemaName,
         strict: true,
         schema: input.schema,
       },
     },
-  });
-  const text = response.output_text;
-  if (!text) throw new Error("OpenAI returned empty output");
-  return text;
+  };
+
+  try {
+    const response = await client.responses.create({ ...base, temperature: 0.2 });
+    const text = response.output_text;
+    if (!text) throw new Error("OpenAI returned empty output");
+    return text;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("temperature")) {
+      const response = await client.responses.create(base);
+      const text = response.output_text;
+      if (!text) throw new Error("OpenAI returned empty output after retry");
+      return text;
+    }
+    throw err;
+  }
 }
 
 async function callAnthropic(input: CallModelInput, apiKey: string, retryHint?: string): Promise<string> {
