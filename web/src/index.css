@@ -1,14 +1,57 @@
-/*
-  Precision instrument palette: calm mission-control on a light neutral field.
-  Blue accent reserved for live execution states; status hues carry score semantics only.
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-surface text-ink font-sans antialiased;
+    @apply bg-canvas text-ink font-sans antialiased;
+    background-image: theme(backgroundImage.hero-glow), theme(backgroundImage.grid);
+    background-size: auto, theme(backgroundSize.grid);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-ink;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-border bg-elevated/90 shadow-card backdrop-blur-sm;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between gap-3 px-5 py-4 border-b border-border;
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink
+      placeholder:text-faint transition-colors
+      focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold
+      text-white bg-gradient-to-b from-accent to-accent-glow shadow-glow
+      transition-all hover:brightness-110 active:scale-[0.99]
+      disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:brightness-100;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface/60
+      px-3.5 py-2 text-sm text-muted transition-colors hover:border-border-bright hover:text-ink;
+  }
+
+  .provider-openai {
+    @apply border-openai/30 bg-openai/10 text-openai;
+  }
+
+  .provider-anthropic {
+    @apply border-anthropic/30 bg-anthropic/10 text-anthropic;
+  }
+
+  .provider-xai {
+    @apply border-xai/30 bg-xai/10 text-xai;
   }
 }
 
@@ -24,23 +67,33 @@
 }
 
 .pulse-live {
-  animation: pulse-border 1.6s ease-in-out infinite;
+  animation: pulse-ring 1.8s ease-in-out infinite;
 }
 
-@keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 111, 237, 0.25); }
-  50% { box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.12); }
+@keyframes pulse-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(108, 140, 255, 0.35), 0 0 0 1px rgba(108, 140, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(108, 140, 255, 0.08), 0 0 0 1px rgba(108, 140, 255, 0.45);
+  }
 }
 
 @keyframes count-up {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .score-enter {
-  animation: count-up 0.5s ease-out forwards;
+  animation: count-up 0.55s ease-out forwards;
 }
 
 .bar-enter {
   animation: count-up 0.4s ease-out forwards;
+}
+
+.pipeline-line {
+  background: linear-gradient(90deg, transparent, rgba(108, 140, 255, 0.45), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2.8s linear infinite;
 }

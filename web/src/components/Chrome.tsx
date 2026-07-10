@@ -12,43 +12,41 @@ export function Header({
   signupUrl: string;
 }) {
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-20">
-      <div className="mx-auto max-w-content px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">DealHealth Playground</h1>
-          <p className="text-sm text-muted mt-1 max-w-xl">
-            Point the newest frontier models at a sales deal. Watch the analysis fan out in real time on Render Workflows.
-          </p>
-          <p className="text-xs text-muted mt-1">Public demo · mock data</p>
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-canvas/85 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-content flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-render/30 bg-render/15 shadow-glow">
+            <img src="https://render.com/favicon.ico" alt="" className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <p className="font-display text-lg font-semibold tracking-tight text-ink">
+              DealHealth Playground
+            </p>
+            <p className="mt-0.5 max-w-xl text-sm text-muted">
+              Frontier models on one deal. Five parallel workflow tasks. One live dashboard.
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onHowItWorks}
-            className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-surface"
-          >
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <button type="button" onClick={onHowItWorks} className="btn-ghost">
             How it works
           </button>
-          <a
-            href={signupUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 text-sm rounded-md border border-border hover:bg-surface"
-          >
+          <a href={signupUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost">
             Sign up on Render
           </a>
-          <a href={deployUrl} target="_blank" rel="noopener noreferrer">
+          <a href={deployUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
             <img
               src="https://render.com/images/deploy-to-render-button.svg"
               alt="Deploy to Render"
-              className="h-7"
+              className="h-8"
             />
           </a>
           <a
             href={githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 text-sm text-muted hover:text-ink"
+            className="btn-ghost text-faint hover:text-ink"
           >
             GitHub
           </a>
@@ -61,31 +59,45 @@ export function Header({
 export function HowItWorksModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className="bg-card rounded-xl border border-border max-w-lg w-full p-6 shadow-lg"
+        className="panel max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 shadow-lift animate-fade-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold mb-4">How it works</h2>
-        <ol className="space-y-4 text-sm text-muted">
-          <li>
-            <strong className="text-ink">1. Pick a model</strong> from live provider catalogs (OpenAI, Anthropic, xAI).
-          </li>
-          <li>
-            <strong className="text-ink">2. Pick or edit a deal</strong> using samples or your own signals.
-          </li>
-          <li>
-            <strong className="text-ink">3. Watch the run.</strong> The API hands your request to Render Workflows. The engine spins up an isolated instance for each of the five analysis dimensions, runs them in parallel, retries any that fail, and merges the results into your dashboard. Close the tab if you want; the run finishes anyway.
-          </li>
+        <h2 className="font-display text-xl font-semibold">How it works</h2>
+        <p className="mt-2 text-sm text-muted">
+          A public demo wired to real Render Workflows fan-out, not a scripted animation.
+        </p>
+
+        <ol className="mt-6 space-y-5 text-sm">
+          {[
+            ["Pick a model", "Live catalogs from OpenAI, Anthropic, and xAI refresh every 15 minutes."],
+            ["Pick a deal", "Use a sample opportunity or edit signals yourself."],
+            [
+              "Watch the run",
+              "The API triggers analyzeOpportunity. Render spins up five isolated dimension tasks in parallel, retries failures, and streams progress back over SSE.",
+            ],
+          ].map(([title, body], i) => (
+            <li key={title} className="flex gap-4">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-surface font-mono text-xs text-accent">
+                {i + 1}
+              </span>
+              <div>
+                <p className="font-medium text-ink">{title}</p>
+                <p className="mt-1 leading-relaxed text-muted">{body}</p>
+              </div>
+            </li>
+          ))}
         </ol>
-        <div className="mt-4 p-3 rounded-lg bg-surface border border-border text-xs font-mono text-muted">
-          API → analyzeOpportunity → [dim₁ dim₂ dim₃ dim₄ dim₅] → aggregate
+
+        <div className="mt-6 rounded-xl border border-border bg-surface p-4 font-mono text-xs text-muted">
+          Browser → API → analyzeOpportunity → [dim₁ … dim₅] → merge & score → dashboard
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full py-2 rounded-md bg-accent text-white text-sm font-medium"
-        >
+
+        <button type="button" onClick={onClose} className="btn-primary mt-6 w-full">
           Got it
         </button>
       </div>
@@ -93,19 +105,39 @@ export function HowItWorksModal({ open, onClose }: { open: boolean; onClose: () 
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: string }) {
+export function Badge({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: string;
+}) {
   const tones: Record<string, string> = {
-    neutral: "bg-surface text-muted border-border",
-    live: "bg-accent/10 text-accent border-accent/30",
-    new: "bg-healthy/10 text-healthy border-healthy/30",
-    retry: "bg-atrisk/15 text-atrisk border-atrisk/30",
-    critical: "bg-critical/10 text-critical border-critical/30",
-    high: "bg-atrisk/10 text-atrisk border-atrisk/30",
-    medium: "bg-atrisk/5 text-muted border-border",
+    neutral: "border-border bg-surface text-muted",
+    live: "border-accent/40 bg-accent/15 text-accent",
+    new: "border-healthy/40 bg-healthy/10 text-healthy",
+    retry: "border-atrisk/40 bg-atrisk/10 text-atrisk",
+    critical: "border-critical/40 bg-critical/10 text-critical",
+    high: "border-atrisk/40 bg-atrisk/10 text-atrisk",
+    medium: "border-border bg-surface text-muted",
+    fallback: "border-atrisk/30 bg-atrisk/5 text-atrisk",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${tones[tone] ?? tones.neutral}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${tones[tone] ?? tones.neutral}`}
+    >
       {children}
     </span>
+  );
+}
+
+export function SectionLabel({ children, hint }: { children: ReactNode; hint?: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-ink">
+        {children}
+      </h2>
+      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+    </div>
   );
 }
