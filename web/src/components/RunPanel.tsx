@@ -1,9 +1,7 @@
-import { useState } from "react";
 import { Badge, Group, Paper, Tabs, Text } from "@mantine/core";
 import type { RunSnapshot, TaskNode } from "../lib/api";
 import { BackendActivity } from "./BackendActivity";
 import { FlowBoard } from "./flow/FlowBoard";
-import { GanttStrip } from "./GanttStrip";
 
 export function RunPanel({
   snapshot,
@@ -14,13 +12,11 @@ export function RunPanel({
   company: string;
   onSelectTask: (task: TaskNode | null, dimension: string) => void;
 }) {
-  const [tab, setTab] = useState<string | null>("graph");
-  const showGantt = snapshot?.status === "completed";
   const eventCount = snapshot?.activity?.length ?? 0;
 
   return (
-    <Paper className="dh-panel" p="md">
-      <Tabs value={tab} onChange={setTab}>
+    <Paper className="dh-panel canvas-panel" p="md">
+      <Tabs defaultValue="graph">
         <Group justify="space-between" align="center" mb="md" wrap="nowrap">
           <Tabs.List>
             <Tabs.Tab value="graph">Graph</Tabs.Tab>
@@ -32,7 +28,6 @@ export function RunPanel({
                 </Badge>
               )}
             </Tabs.Tab>
-            {showGantt && <Tabs.Tab value="timing">Timing</Tabs.Tab>}
           </Tabs.List>
           {snapshot?.status && (
             <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
@@ -54,12 +49,6 @@ export function RunPanel({
         <Tabs.Panel value="activity">
           <BackendActivity snapshot={snapshot} embedded />
         </Tabs.Panel>
-
-        {showGantt && snapshot && (
-          <Tabs.Panel value="timing">
-            <GanttStrip snapshot={snapshot} embedded />
-          </Tabs.Panel>
-        )}
       </Tabs>
     </Paper>
   );

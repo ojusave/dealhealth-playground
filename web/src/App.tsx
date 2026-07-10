@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Divider,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { Alert, Box, Button, Stack, Tabs, Text } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   catalogIssues,
   fetchModels,
@@ -23,14 +15,16 @@ import {
   type TaskNode,
 } from "./lib/api";
 import { notifyError, notifyRateLimit } from "./lib/notify";
-import { AppFooter, AppHeader, AppHero } from "./components/AppHeader";
-import { DashboardView } from "./components/DashboardView";
+import { AppFooter } from "./components/AppHeader";
+import { ExecutionTrace } from "./components/ExecutionTrace";
 import { HowItWorksModal } from "./components/HowItWorksModal";
+import { InspectorPanel } from "./components/InspectorPanel";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
 import { ModelPicker, modelLabel, usePersistedModel } from "./components/ModelPicker";
 import { OpportunityForm } from "./components/OpportunityForm";
 import { RunPanel } from "./components/RunPanel";
-import { TaskInspector } from "./components/TaskInspector";
+import { RunSummary } from "./components/RunSummary";
+import { WorkspaceHeader } from "./components/WorkspaceHeader";
 
 export default function App() {
   const [models, setModels] = useState<ModelsResponse | null>(null);
@@ -41,14 +35,13 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
   const [selectedDimension, setSelectedDimension] = useState("");
-  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [showHow, setShowHow] = useState(false);
-  const [compareMode, setCompareMode] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const formRef = useRef<HTMLDivElement>(null);
   const notifiedRunError = useRef<string | null>(null);
+  const stopSubscription = useRef<(() => void) | null>(null);
+  const mobile = useMediaQuery("(max-width: 70em)");
 
   const availableModels = useMemo(
     () => (models ? selectableProviders(models).flatMap(([, p]) => p.models) : []),
@@ -89,6 +82,8 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => () => stopSubscription.current?.(), []);
+
   useEffect(() => {
     void fetchSamples()
       .then((s) => {
@@ -116,14 +111,13 @@ export default function App() {
     setSnapshot(null);
     setSelectedTask(null);
     setSelectedDimension("");
-    setInspectorOpen(false);
-    setCompareMode(false);
     notifiedRunError.current = null;
+    stopSubscription.current?.();
 
     try {
       const { runId } = await startAnalysis(opportunity, modelId);
       setDispatching(false);
-      subscribeRun(
+      stopSubscription.current = subscribeRun(
         runId,
         (snap) => {
           setSnapshot(snap);
@@ -162,12 +156,9 @@ export default function App() {
     }
   }, [canAnalyze, opportunity, modelId]);
 
-  const scrollToForm = () => formRef.current?.scrollIntoView({ behavior: "smooth" });
-
   const handleSelectTask = (task: TaskNode | null, dimension: string) => {
     setSelectedTask(task);
     setSelectedDimension(dimension);
-    setInspectorOpen(Boolean(task || dimension));
   };
 
   const analyzeLabel = running
@@ -185,111 +176,93 @@ export default function App() {
       ? `${completedTasks}/5 done${failedTasks ? ` · ${failedTasks} failed` : ""}`
       : null;
 
-  const showDashboard = Boolean(snapshot?.result);
+  const controls = (
+    <Stack gap="md" className="control-stack">
+      {opportunity ? (
+        <OpportunityForm samples={samples} value={opportunity} onChange={setOpportunity} />
+      ) : null}
+      <ModelPicker
+        models={models}
+        value={modelId}
+        onChange={setModelId}
+        disabled={!allModelIds.length || running}
+      />
+      <Button
+        size="md"
+        fullWidth
+        loading={running}
+        disabled={!canAnalyze}
+        onClick={() => void analyze()}
+      >
+        {analyzeLabel}
+      </Button>
+      {progressLabel ? (
+        <Text size="xs" c="dimmed" ta="center">{progressLabel}</Text>
+      ) : null}
+      {catalogError && !running ? (
+        <Alert color="yellow" variant="light" title={catalogError.title}>
+          {catalogError.message}
+        </Alert>
+      ) : null}
+      {rateLimitAlert ? (
+        <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
+          {rateLimitAlert.message}
+          {rateLimitAlert.hint ? <Text size="sm" mt="xs" c="dimmed">{rateLimitAlert.hint}</Text> : null}
+        </Alert>
+      ) : null}
+    </Stack>
+  );
+
+  const canvas = (
+    <Stack gap="md" className="canvas-stack">
+      <RunSummary snapshot={snapshot} modelLabel={selectedLabel} />
+      <RunPanel
+        snapshot={snapshot}
+        company={opportunity?.company ?? "Deal"}
+        onSelectTask={handleSelectTask}
+      />
+      <ExecutionTrace snapshot={snapshot} />
+    </Stack>
+  );
+
+  const inspector = (
+    <InspectorPanel
+      task={selectedTask}
+      dimension={selectedDimension}
+      snapshot={snapshot}
+    />
+  );
 
   return (
-    <Box className="dh-page">
-      <AppHeader />
+    <Box className="workspace-page">
+      <WorkspaceHeader />
       <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
-
-      <Container size="lg" py="xl">
-        <Stack gap="xl">
-          <AppHero />
-
-          {initialLoading && !models ? (
-            <LoadingSkeleton />
-          ) : (
-            <Box ref={formRef}>
-              <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-                <Stack gap="lg">
-                  {opportunity && (
-                    <OpportunityForm
-                      samples={samples}
-                      value={opportunity}
-                      onChange={setOpportunity}
-                    />
-                  )}
-
-                  <ModelPicker
-                    models={models}
-                    value={modelId}
-                    onChange={setModelId}
-                    disabled={!allModelIds.length || running}
-                  />
-
-                  <Button
-                    size="lg"
-                    fullWidth
-                    loading={running}
-                    disabled={!canAnalyze}
-                    onClick={() => void analyze()}
-                  >
-                    {analyzeLabel}
-                  </Button>
-                  {progressLabel && (
-                    <Text size="sm" c="dimmed" ta="center">
-                      {progressLabel}
-                    </Text>
-                  )}
-
-                  {compareMode && (
-                    <Text size="sm" c="dimmed" ta="center">
-                      Change the model, then analyze again.
-                    </Text>
-                  )}
-
-                  {catalogError && !running && (
-                    <Alert color="yellow" variant="light" title={catalogError.title}>
-                      {catalogError.message}
-                    </Alert>
-                  )}
-
-                  {rateLimitAlert && (
-                    <Alert color="yellow" variant="light" title={rateLimitAlert.title}>
-                      {rateLimitAlert.message}
-                      {rateLimitAlert.hint && (
-                        <Text size="sm" mt="xs" c="dimmed">
-                          {rateLimitAlert.hint}
-                        </Text>
-                      )}
-                    </Alert>
-                  )}
-                </Stack>
-
-                <RunPanel
-                  snapshot={snapshot}
-                  company={opportunity?.company ?? "Deal"}
-                  onSelectTask={handleSelectTask}
-                />
-              </SimpleGrid>
-            </Box>
-          )}
-
-          <TaskInspector
-            node={selectedTask}
-            dimension={selectedDimension}
-            opened={inspectorOpen}
-            onClose={() => setInspectorOpen(false)}
-          />
-
-          {showDashboard && snapshot?.result && (
-            <DashboardView
-              data={snapshot.result}
-              onReanalyze={scrollToForm}
-              onCompare={() => {
-                setCompareMode(true);
-                scrollToForm();
-              }}
-            />
-          )}
-
-          <Divider />
-          <AppFooter
-            mode={executionMode === "unknown" ? "unknown" : executionMode}
-            onHowItWorks={() => setShowHow(true)}
-          />
-        </Stack>
-      </Container>
+      {initialLoading && !models ? (
+        <Box p="md"><LoadingSkeleton /></Box>
+      ) : mobile ? (
+        <Tabs defaultValue="canvas" className="mobile-workspace">
+          <Tabs.List grow>
+            <Tabs.Tab value="controls">Inputs</Tabs.Tab>
+            <Tabs.Tab value="canvas">Canvas</Tabs.Tab>
+            <Tabs.Tab value="inspector">Details</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="controls" p="md">{controls}</Tabs.Panel>
+          <Tabs.Panel value="canvas" p="md">{canvas}</Tabs.Panel>
+          <Tabs.Panel value="inspector">{inspector}</Tabs.Panel>
+        </Tabs>
+      ) : (
+        <div className="workspace-grid">
+          <aside className="workspace-sidebar">{controls}</aside>
+          <main className="workspace-canvas">{canvas}</main>
+          <aside className="workspace-inspector">{inspector}</aside>
+        </div>
+      )}
+      <Box className="workspace-footer">
+        <AppFooter
+          mode={executionMode === "unknown" ? "unknown" : executionMode}
+          onHowItWorks={() => setShowHow(true)}
+        />
+      </Box>
     </Box>
   );
 }

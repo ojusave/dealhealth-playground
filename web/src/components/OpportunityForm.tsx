@@ -104,7 +104,7 @@ export function OpportunityForm({
         )}
 
         <Collapse expanded={editorOpen}>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" pt="xs">
+          <SimpleGrid cols={1} spacing="md" pt="xs">
             <TextInput
               label="Company"
               value={value.company}

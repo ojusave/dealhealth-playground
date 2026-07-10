@@ -62,7 +62,7 @@ function FlowNodeInner({ data }: NodeProps) {
       shadow="sm"
       style={{
         opacity: d.dimmed ? 0.5 : 1,
-        borderLeft: `3px solid ${meta.accent}`,
+        borderTop: `3px solid ${meta.accent}`,
         transition: "opacity 200ms ease, box-shadow 200ms ease",
       }}
     >
