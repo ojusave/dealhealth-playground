@@ -283,9 +283,9 @@ export function AnalysisReport({
                       <Badge
                         size="xs"
                         variant="light"
-                        color={task?.status === "failed" ? "red" : "green"}
+                        color={dimension.failed || task?.status === "failed" ? "red" : "green"}
                       >
-                        {task?.status === "failed" ? "Failed" : "Completed"}
+                        {dimension.failed || task?.status === "failed" ? "Failed" : "Completed"}
                       </Badge>
                     </Group>
                     {task?.durationMs != null ? (
