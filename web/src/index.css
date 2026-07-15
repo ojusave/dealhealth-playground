@@ -2,10 +2,13 @@
   --dh-page-bg: #f5f7fb;
   --dh-surface: #ffffff;
   --dh-surface-subtle: #f8fafc;
-  --dh-border: #dfe3ea;
-  --dh-muted: #667085;
-  --dh-grid: #e2e7ee;
+  --dh-border: #e2e8f0;
+  --dh-muted: #64748b;
+  --dh-grid: #e7ecf3;
   --dh-header-bg: rgba(255, 255, 255, 0.94);
+  --dh-accent-soft: #eef2ff;
+  --dh-accent-border: #6366f1;
+  --dh-track: #e2e8f0;
 }
 
 [data-mantine-color-scheme="dark"] {
@@ -16,6 +19,9 @@
   --dh-muted: #98a2b3;
   --dh-grid: #2d3542;
   --dh-header-bg: rgba(23, 27, 36, 0.94);
+  --dh-accent-soft: color-mix(in srgb, #6366f1 16%, #171b24);
+  --dh-accent-border: #818cf8;
+  --dh-track: #2c3340;
 }
 
 body {
@@ -26,8 +32,16 @@ body {
 }
 
 .workspace-page {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   background: var(--dh-page-bg);
+}
+
+@supports (height: 100dvh) {
+  .workspace-page {
+    height: 100dvh;
+  }
 }
 
 .workspace-header {
@@ -48,19 +62,36 @@ body {
   text-transform: uppercase;
 }
 
+.workspace-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--dh-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+
+.workspace-header-link:hover {
+  color: var(--mantine-color-text);
+  text-decoration: none;
+}
+
 .workspace-resizable {
-  height: calc(100vh - 56px);
-  min-height: 560px;
+  flex: 1;
+  min-height: 0;
 }
 
 .workspace-pane {
+  position: relative;
+  display: flex;
   height: 100%;
   min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--dh-surface);
-}
-
-.workspace-pane--controls {
-  border-right: 0;
 }
 
 .workspace-pane--canvas {
@@ -71,65 +102,97 @@ body {
   background-size: 24px 24px;
 }
 
-.workspace-pane--inspector {
-  border-left: 0;
-}
-
 .pane-scroll {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
-.workspace-pane--controls .pane-scroll,
 .workspace-pane--canvas .pane-scroll {
   padding: 1rem;
+}
+
+.workspace-pane--controls .pane-scroll {
+  padding: 0.375rem 1rem 1rem;
+}
+
+.workspace-pane--collapsed .pane-scroll {
+  display: none;
 }
 
 .resize-handle {
   position: relative;
   z-index: 10;
-  flex: 0 0 9px;
-  width: 9px;
-  background: var(--dh-surface);
-  border-left: 1px solid var(--dh-border);
-  border-right: 1px solid var(--dh-border);
+  flex: 0 0 1px;
+  width: 1px;
   outline: none;
-  cursor: col-resize;
+}
+
+/* Soft halo that widens the affordance on hover/drag without moving layout. */
+.resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  right: -3px;
+  background: transparent;
   transition: background 120ms ease;
 }
 
-.resize-handle span {
+/* The visible 1px border line. */
+.resize-handle::after {
+  content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 36px;
-  border-radius: 2px;
+  inset: 0;
   background: var(--dh-border);
-  transform: translate(-50%, -50%);
-  transition: background 120ms ease, height 120ms ease;
+  transition: background 120ms ease;
 }
 
-.resize-handle:hover,
-.resize-handle[data-resize-handle-active],
-.resize-handle:focus-visible {
-  background: var(--mantine-color-indigo-0);
+.resize-handle[data-separator="hover"]::before,
+.resize-handle[data-separator="focus"]::before,
+.resize-handle[data-separator="active"]::before {
+  background: var(--dh-accent-soft);
 }
 
-.resize-handle:hover span,
-.resize-handle[data-resize-handle-active] span,
-.resize-handle:focus-visible span {
-  height: 52px;
-  background: var(--mantine-color-indigo-5);
+.resize-handle[data-separator="hover"]::after,
+.resize-handle[data-separator="focus"]::after,
+.resize-handle[data-separator="active"]::after {
+  background: var(--dh-accent-border);
 }
 
-[data-mantine-color-scheme="dark"] .resize-handle:hover,
-[data-mantine-color-scheme="dark"] .resize-handle[data-resize-handle-active],
-[data-mantine-color-scheme="dark"] .resize-handle:focus-visible {
-  background: var(--mantine-color-dark-5);
+.pane-collapse-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 4px 4px 0;
+}
+
+.pane-collapse-bar--controls {
+  justify-content: flex-end;
+}
+
+.pane-collapse-bar--inspector {
+  justify-content: flex-start;
+}
+
+.pane-collapse-rail {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+  background: var(--dh-surface);
+  cursor: pointer;
+  transition: background 120ms ease, opacity 120ms ease;
+}
+
+.pane-collapse-rail:hover {
+  background: var(--dh-surface-subtle);
 }
 
 .control-stack .dh-panel {
@@ -159,11 +222,22 @@ body {
   background: var(--dh-surface-subtle);
 }
 
+/* Dot-grid color, consumed by the React Flow <Background color> prop.
+   Dylan signed off on the neutral gray dots in light mode; dark mode uses
+   the slate grid token so dots read on the dark canvas. */
+.dh-flow-shell {
+  --dh-flow-dot: #d1d5db;
+}
+
+[data-mantine-color-scheme="dark"] .dh-flow-shell {
+  --dh-flow-dot: var(--dh-grid);
+}
+
 .dh-flow-canvas {
   position: relative;
   width: 100%;
-  height: clamp(390px, 52vh, 560px);
-  min-height: 390px;
+  height: clamp(430px, 55vh, 620px);
+  min-height: 430px;
   overflow: hidden;
   border-radius: var(--mantine-radius-md);
   background: var(--dh-surface-subtle);
@@ -189,9 +263,15 @@ body {
   background: var(--dh-surface);
 }
 
-.dh-model-pick--active {
-  border-color: var(--mantine-color-indigo-5);
-  background: var(--mantine-color-indigo-0);
+[data-mantine-color-scheme="dark"] .dh-model-pick:hover:not(:disabled) {
+  border-color: var(--mantine-color-indigo-6);
+  background: var(--mantine-color-dark-5);
+}
+
+.dh-model-pick--active,
+.dh-model-pick--active:hover:not(:disabled) {
+  border-color: var(--dh-accent-border);
+  background: var(--dh-accent-soft);
 }
 
 .dh-model-pick:disabled {
@@ -200,10 +280,84 @@ body {
 }
 
 .run-summary {
+  position: relative;
   background: var(--dh-surface);
   border: 1px solid var(--dh-border);
   border-radius: var(--mantine-radius-md);
   overflow: hidden;
+}
+
+/* Overall run progress: a 3px determinate strip pinned to the panel's top
+   edge. Absolutely positioned so it stays out of the SimpleGrid flow. */
+.run-summary-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--mantine-color-indigo-5);
+  transition: width 400ms ease, background-color 300ms ease;
+}
+
+.run-summary-progress--running::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-100%);
+  animation: dh-strip-shimmer 1.8s ease-in-out infinite;
+}
+
+.run-summary-progress--completed {
+  background: var(--mantine-color-green-6);
+  animation: dh-strip-flash 550ms ease-in-out 2;
+}
+
+.run-summary-progress--failed {
+  background: var(--mantine-color-red-6);
+}
+
+/* Pulse for the status ring's section while a run is active (the RingProgress
+   section carries data-dh-pulse, which lands on the svg circle). */
+.run-summary [data-dh-pulse] {
+  animation: dh-ring-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes dh-strip-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes dh-strip-flash {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes dh-ring-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-summary-progress,
+  .run-summary-progress--completed,
+  .run-summary [data-dh-pulse] {
+    animation: none;
+    transition: none;
+  }
+
+  .run-summary-progress--running::after {
+    animation: none;
+  }
 }
 
 .run-summary-cell {
@@ -262,12 +416,14 @@ body {
   transition: width 250ms ease;
 }
 
+/* Always-dark slate ink: duration labels only render on the pastel
+   running/completed/failed bars, which keep light -3 tones in both schemes. */
 .trace-bar span {
-  color: #101828;
+  color: var(--mantine-color-gray-9);
   font: 500 0.65rem/1 var(--mantine-font-family-monospace);
 }
 
-.trace-bar--queued { background: var(--mantine-color-gray-3); }
+.trace-bar--queued { background: var(--dh-track); }
 .trace-bar--running { background: var(--mantine-color-indigo-3); }
 .trace-bar--completed { background: var(--mantine-color-green-3); }
 .trace-bar--failed { background: var(--mantine-color-red-3); }
@@ -292,23 +448,11 @@ body {
 }
 
 .workspace-footer {
+  flex-shrink: 0;
+  margin-top: auto;
   border-top: 1px solid var(--dh-border);
   background: var(--dh-surface);
 }
-
-.footer-status {
-  min-height: 28px;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--mantine-color-gray-5);
-}
-
-.status-dot--workflows { background: var(--mantine-color-green-6); }
-.status-dot--simulated { background: var(--mantine-color-yellow-6); }
 
 .footer-link {
   display: inline-flex;
@@ -331,6 +475,34 @@ body {
   filter: invert(1);
 }
 
+.step-num {
+  display: grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.step-num--risk {
+  background: var(--mantine-color-orange-light);
+  color: var(--mantine-color-orange-light-color);
+}
+
+.step-num--action {
+  background: var(--mantine-color-indigo-light);
+  color: var(--mantine-color-indigo-light-color);
+}
+
+.step-num--warn {
+  background: var(--mantine-color-yellow-light);
+  color: var(--mantine-color-yellow-light-color);
+}
+
 .how-step-number {
   display: grid;
   flex: 0 0 28px;
@@ -344,14 +516,24 @@ body {
   font-weight: 700;
 }
 
+/* ---- Analysis report (post-run) ------------------------------------- */
+
 .analysis-report {
-  min-height: calc(100vh - 56px);
-  background: var(--dh-surface);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background-color: var(--dh-page-bg);
+  background-image:
+    linear-gradient(var(--dh-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dh-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .analysis-toolbar {
   position: sticky;
-  top: 56px;
+  top: 0;
   z-index: 100;
   min-height: 52px;
   padding: 0.5rem 1.5rem;
@@ -360,80 +542,286 @@ body {
   backdrop-filter: blur(10px);
 }
 
+.analysis-toolbar-divider {
+  flex: 0 0 1px;
+  width: 1px;
+  height: 16px;
+  background: var(--dh-border);
+}
+
 .analysis-report-body {
-  width: min(1500px, 100%);
+  width: min(1240px, 100%);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem 1.5rem 3.5rem;
 }
 
 .analysis-layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.5rem;
+  align-items: start;
 }
 
-.analysis-synthesis {
+.analysis-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Soft canvas shadow + radius shared by report panels (mirrors .canvas-panel). */
+.analysis-panel {
+  border-radius: var(--mantine-radius-md);
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.05);
+}
+
+[data-mantine-color-scheme="dark"] .analysis-panel {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.analysis-flow,
+.analysis-dimensions,
+.analysis-list-card,
+.analysis-context-card {
+  padding: 1rem;
+}
+
+.analysis-partial {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--mantine-color-yellow-6) 8%, var(--dh-surface));
+  border: 1px solid color-mix(in srgb, var(--mantine-color-yellow-6) 35%, var(--dh-border));
+  border-radius: var(--mantine-radius-md);
+}
+
+.analysis-hero {
+  overflow: hidden;
+}
+
+.analysis-hero-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 2rem;
-  align-items: start;
-  padding: 1.25rem 0;
-  border-top: 1px solid var(--dh-border);
-  border-bottom: 1px solid var(--dh-border);
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.analysis-hero-copy {
+  min-width: 0;
+}
+
+.analysis-headline {
+  max-width: 30em;
+}
+
+.analysis-meta-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--dh-muted);
+  opacity: 0.7;
+}
+
+.analysis-hero-score {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding-left: 2rem;
+  border-left: 1px solid var(--dh-border);
+  text-align: right;
 }
 
 .analysis-score {
-  font-family: Georgia, serif;
-  font-size: clamp(3.5rem, 7vw, 5.5rem);
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(3.25rem, 6vw, 4.5rem);
   font-weight: 400;
-  line-height: 0.8;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .analysis-score--green { color: var(--mantine-color-green-7); }
 .analysis-score--yellow { color: var(--mantine-color-yellow-8); }
 .analysis-score--red { color: var(--mantine-color-red-7); }
 
-.analysis-dimension {
-  min-height: 112px;
-  padding: 0.8rem;
-  background: var(--dh-surface);
-  border: 1px solid var(--dh-border);
-  border-radius: var(--mantine-radius-sm);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
+[data-mantine-color-scheme="dark"] .analysis-score--green { color: var(--mantine-color-green-4); }
+[data-mantine-color-scheme="dark"] .analysis-score--yellow { color: var(--mantine-color-yellow-4); }
+[data-mantine-color-scheme="dark"] .analysis-score--red { color: var(--mantine-color-red-4); }
+
+.analysis-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--dh-border);
+  background: var(--dh-surface-subtle);
 }
 
-.analysis-dimension:hover,
+.analysis-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0.65rem 1rem 0.7rem 1.5rem;
+  border-right: 1px solid var(--dh-border);
+}
+
+.analysis-hero-stat:last-child {
+  border-right: 0;
+}
+
+/* Embedded run graph: 380px keeps the taller 116px-pitch node fan legible
+   (fitView scales ~0.6) without letting the panel dominate the report. */
+.analysis-flow .dh-flow-canvas {
+  height: 380px;
+  min-height: 380px;
+}
+
+.analysis-dimension {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 104px;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  background: var(--dh-surface-subtle);
+  border: 1px solid var(--dh-border);
+  border-radius: var(--mantine-radius-md);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.analysis-dimension:hover:not(.analysis-dimension--active) {
+  border-color: var(--mantine-color-indigo-3);
+  background: var(--dh-surface);
+}
+
+[data-mantine-color-scheme="dark"] .analysis-dimension:hover:not(.analysis-dimension--active) {
+  border-color: var(--mantine-color-indigo-6);
+  background: var(--mantine-color-dark-5);
+}
+
 .analysis-dimension--active {
-  border-color: var(--mantine-color-indigo-5);
-  box-shadow: 0 0 0 1px var(--mantine-color-indigo-5);
+  border-color: var(--dh-accent-border);
+  background: var(--dh-accent-soft);
+}
+
+.analysis-dimension:focus-visible {
+  outline: 2px solid var(--dh-accent-border);
+  outline-offset: 2px;
+}
+
+.analysis-dim-score {
+  margin-top: auto;
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .analysis-score-line {
+  display: block;
   width: 100%;
   height: 3px;
-  margin-top: 0.5rem;
-  border-radius: 2px;
+  border-radius: 999px;
 }
 
 .analysis-score-line--green { background: var(--mantine-color-green-6); }
 .analysis-score-line--yellow { background: var(--mantine-color-yellow-6); }
 .analysis-score-line--red { background: var(--mantine-color-red-6); }
+.analysis-score-line--na { background: var(--dh-border); }
+
+.analysis-dim-score--na {
+  color: var(--dh-muted);
+}
+
+.analysis-detail {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--dh-border);
+  scroll-margin-top: 72px;
+}
+
+.analysis-prose {
+  max-width: 62ch;
+}
+
+.analysis-reasoning {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: analysis-step;
+}
+
+.analysis-reasoning li {
+  counter-increment: analysis-step;
+  position: relative;
+  min-height: 22px;
+  padding-left: 32px;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.5;
+}
+
+.analysis-reasoning li::before {
+  content: counter(analysis-step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mantine-color-gray-light);
+  color: var(--mantine-color-gray-light-color);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.analysis-list {
+  display: flex;
+  flex-direction: column;
+}
 
 .analysis-list-row {
-  min-height: 38px;
-  padding: 0.45rem 0;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--dh-border);
 }
 
-.analysis-detail,
-.analysis-context-card {
-  background: var(--dh-surface);
-  border: 1px solid var(--dh-border);
+.analysis-list-row:first-child {
+  padding-top: 0.25rem;
+}
+
+.analysis-list-row:last-child {
+  padding-bottom: 0.15rem;
+  border-bottom: 0;
+}
+
+.analysis-list-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.analysis-rail {
+  position: sticky;
+  top: 68px;
+  min-width: 0;
 }
 
 .analysis-context-rows {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .analysis-context-rows > div {
@@ -442,40 +830,110 @@ body {
   gap: 0.5rem;
 }
 
-.mobile-workspace {
-  min-height: calc(100vh - 56px);
+.analysis-context-note {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--dh-border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .analysis-report {
+    animation: analysis-enter 220ms ease-out;
+  }
+
+  .analysis-section {
+    animation: analysis-enter 240ms ease-out both;
+  }
+
+  .analysis-main > .analysis-section:nth-child(2) { animation-delay: 40ms; }
+  .analysis-main > .analysis-section:nth-child(3) { animation-delay: 80ms; }
+  .analysis-main > .analysis-section:nth-child(4) { animation-delay: 120ms; }
+  .analysis-main > .analysis-section:nth-child(n + 5) { animation-delay: 150ms; }
+
+  .analysis-rail.analysis-section {
+    animation-delay: 60ms;
+  }
+}
+
+@keyframes analysis-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 70em) {
-  .workspace-footer {
-    margin-top: 1rem;
-  }
-
   .analysis-layout {
     grid-template-columns: 1fr;
+  }
+
+  .analysis-rail {
+    position: static;
   }
 }
 
 @media (max-width: 48em) {
-  .analysis-toolbar,
-  .analysis-report-body {
+  .analysis-toolbar {
     padding-right: 1rem;
     padding-left: 1rem;
   }
 
-  .analysis-synthesis {
+  .analysis-report-body {
+    padding: 1rem 1rem 2.5rem;
+  }
+
+  .analysis-hero-main {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.25rem 1rem;
   }
 
-  .analysis-synthesis > :last-child {
+  .analysis-hero-score {
     align-items: flex-start;
+    padding-top: 1.25rem;
+    padding-left: 0;
+    border-top: 1px solid var(--dh-border);
+    border-left: 0;
+    text-align: left;
   }
 
-  .run-summary-cell:nth-child(2) {
+  .analysis-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-hero-stat {
+    padding: 0.6rem 1rem;
     border-right: 0;
   }
 
-  .run-summary-cell:nth-child(-n + 2) {
+  .analysis-hero-stat:nth-child(odd) {
+    border-right: 1px solid var(--dh-border);
+  }
+
+  .analysis-hero-stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--dh-border);
+  }
+}
+
+.mobile-workspace {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 48em) {
+  /* The progress strip is always the grid's first child, so the five cells
+     are children 2-6: the second cell is :nth-child(3). */
+  .run-summary-cell:nth-child(3) {
+    border-right: 0;
+  }
+
+  .run-summary-cell:nth-child(-n + 3) {
     border-bottom: 1px solid var(--dh-border);
   }
 
@@ -484,6 +942,7 @@ body {
   }
 
   .dh-flow-canvas {
-    height: 420px;
+    height: 430px;
+    min-height: 430px;
   }
 }

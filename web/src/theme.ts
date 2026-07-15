@@ -26,6 +26,40 @@ export const theme = createTheme({
       "#3730a3",
       "#312e81",
     ],
+    // Slate (Tailwind) replaces Mantine's neutral gray so light-mode component
+    // surfaces (dropdowns, segmented tracks, switches, ring tracks, dimmed text)
+    // pick up the app's blue-gray tint. Mantine light-scheme semantics:
+    // gray-0 hover, gray-2/3 disabled/tracks, gray-4 default border,
+    // gray-5 placeholder, gray-6 dimmed text.
+    gray: [
+      "#f8fafc",
+      "#f1f5f9",
+      "#e2e8f0",
+      "#cbd5e1",
+      "#94a3b8",
+      "#64748b",
+      "#475569",
+      "#334155",
+      "#1e293b",
+      "#0f172a",
+    ],
+    // Blue-slate dark ramp anchored to the --dh-* shell tokens in index.css.
+    // Mantine dark-scheme semantics: dark-0 text, dark-2 dimmed, dark-3
+    // placeholder, dark-4 default border (--dh-border), dark-5 hover,
+    // dark-6 control surface (--dh-surface-subtle), dark-7 body/popover bg
+    // (--dh-surface), dark-8 inset/code bg (--dh-page-bg).
+    dark: [
+      "#c9d1de",
+      "#98a2b3",
+      "#6b7689",
+      "#525e74",
+      "#2c3340",
+      "#242a36",
+      "#1d222d",
+      "#171b24",
+      "#10131a",
+      "#0b0e14",
+    ],
   },
   components: {
     Card: {

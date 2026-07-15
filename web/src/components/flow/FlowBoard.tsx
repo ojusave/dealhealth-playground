@@ -14,10 +14,15 @@ import { FlowNode, type FlowNodeData } from "./FlowNodes";
 
 const NODE_TYPES = { flow: FlowNode };
 
+// Dimension cards render ~95px tall in every state (elapsed time sits inline
+// with the status badge), so a 116px pitch keeps a clear gutter between cards.
+// Root and aggregate share the middle dimension's y: all cards are the same
+// height, so aligning tops vertically centers them against the fan.
+const DIM_PITCH = 116;
 const POSITIONS = {
-  root: { x: 24, y: 168 },
-  aggregate: { x: 520, y: 168 },
-  dimensions: [32, 112, 192, 272, 352].map((y) => ({ x: 268, y })),
+  root: { x: 0, y: 2 * DIM_PITCH },
+  aggregate: { x: 640, y: 2 * DIM_PITCH },
+  dimensions: [0, 1, 2, 3, 4].map((i) => ({ x: 300, y: i * DIM_PITCH })),
 };
 
 function edgeStyle(status: string, animated: boolean): Partial<Edge> {
@@ -187,10 +192,13 @@ export function FlowBoard({
           zoomOnPinch={false}
           preventScrolling={false}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.1 }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="#d1d5db" />
+          {/* The color prop feeds an inline CSS custom property on the pattern
+              svg, so a var() reference resolves against the cascade and flips
+              with the color scheme (see .dh-flow-shell in index.css). */}
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="var(--dh-flow-dot)" />
         </ReactFlow>
       </div>
       <Text size="xs" c="dimmed">
