@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Button, Stack, Tabs, Text } from "@mantine/core";
+import { Alert, Box, Button, Loader, Stack, Tabs, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   catalogIssues,
@@ -28,6 +28,9 @@ import { RunPanel } from "./components/RunPanel";
 import { RunSummary } from "./components/RunSummary";
 import { WorkspaceHeader } from "./components/WorkspaceHeader";
 
+/** Pause after a live run completes so the canvas can flip green before the report opens. */
+const COMPLETION_BEAT_MS = 900;
+
 export default function App() {
   const [models, setModels] = useState<ModelsResponse | null>(null);
   const [catalogError, setCatalogError] = useState<AppError | null>(null);
@@ -44,6 +47,8 @@ export default function App() {
   const [initialLoading, setInitialLoading] = useState(true);
   const notifiedRunError = useRef<string | null>(null);
   const stopSubscription = useRef<(() => void) | null>(null);
+  const autoOpenTimer = useRef<number | null>(null);
+  const prevRunStatus = useRef<RunSnapshot["status"] | null>(null);
   const mobile = useMediaQuery("(max-width: 70em)");
 
   const availableModels = useMemo(
@@ -54,8 +59,6 @@ export default function App() {
   const [modelId, setModelId] = usePersistedModel(models?.defaultModelId ?? "", allModelIds);
   const canAnalyze = Boolean(opportunity && allModelIds.length > 0 && !running);
   const selectedLabel = modelLabel(models, modelId);
-
-  const executionMode = snapshot?.mode ?? (models ? "workflows" : "unknown");
 
   useEffect(() => {
     const loadModels = () => {
@@ -85,7 +88,20 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => () => stopSubscription.current?.(), []);
+  const cancelAutoOpen = useCallback(() => {
+    if (autoOpenTimer.current !== null) {
+      window.clearTimeout(autoOpenTimer.current);
+      autoOpenTimer.current = null;
+    }
+  }, []);
+
+  useEffect(
+    () => () => {
+      stopSubscription.current?.();
+      cancelAutoOpen();
+    },
+    [cancelAutoOpen]
+  );
 
   useEffect(() => {
     void fetchSamples()
@@ -117,6 +133,8 @@ export default function App() {
     setSelectedDimension("");
     notifiedRunError.current = null;
     stopSubscription.current?.();
+    cancelAutoOpen();
+    prevRunStatus.current = null;
 
     try {
       const { runId } = await startAnalysis(opportunity, modelId);
@@ -125,7 +143,23 @@ export default function App() {
         runId,
         (snap) => {
           setSnapshot(snap);
+          const wasCompleted = prevRunStatus.current === "completed";
+          prevRunStatus.current = snap.status;
           if (snap.status === "completed" || snap.status === "failed") setRunning(false);
+          // Completion beat: this live run just finished with a result. Hold long
+          // enough to see the canvas flip green, then surface the report. Opening
+          // or closing the report manually during the beat cancels the timer.
+          if (
+            snap.status === "completed" &&
+            snap.result &&
+            !wasCompleted &&
+            autoOpenTimer.current === null
+          ) {
+            autoOpenTimer.current = window.setTimeout(() => {
+              autoOpenTimer.current = null;
+              setAnalysisOpen(true);
+            }, COMPLETION_BEAT_MS);
+          }
         },
         (err) => {
           if (notifiedRunError.current !== err.message) {
@@ -158,27 +192,23 @@ export default function App() {
       setRunning(false);
       setDispatching(false);
     }
-  }, [canAnalyze, opportunity, modelId]);
+  }, [canAnalyze, opportunity, modelId, cancelAutoOpen]);
 
   const handleSelectTask = (task: TaskNode | null, dimension: string) => {
     setSelectedTask(task);
     setSelectedDimension(dimension);
   };
 
-  const analyzeLabel = running
-    ? dispatching
-      ? "Starting…"
-      : "Running…"
-    : `Analyze with ${selectedLabel}`;
-
   const completedTasks =
     snapshot?.tasks.filter((task) => task.status === "completed").length ?? 0;
   const failedTasks = snapshot?.tasks.filter((task) => task.status === "failed").length ?? 0;
-  const progressLabel = dispatching
-    ? "Dispatching…"
-    : running
-      ? `${completedTasks}/5 done${failedTasks ? ` · ${failedTasks} failed` : ""}`
-      : null;
+
+  const analyzeLabel = running
+    ? dispatching
+      ? "Starting…"
+      : `Analyzing… ${completedTasks}/5`
+    : `Analyze with ${selectedLabel}`;
+  const progressNote = failedTasks ? `${failedTasks} of 5 tasks failed` : null;
 
   const controls = (
     <Stack gap="md" className="control-stack">
@@ -194,14 +224,18 @@ export default function App() {
       <Button
         size="md"
         fullWidth
-        loading={running}
-        disabled={!canAnalyze}
+        disabled={!canAnalyze && !running}
+        aria-busy={running || undefined}
+        leftSection={running ? <Loader size="xs" color="var(--button-color)" /> : undefined}
+        style={running ? { pointerEvents: "none" } : undefined}
         onClick={() => void analyze()}
       >
         {analyzeLabel}
       </Button>
-      {progressLabel ? (
-        <Text size="xs" c="dimmed" ta="center">{progressLabel}</Text>
+      {running ? (
+        <Text size="xs" c="dimmed" ta="center" aria-live="polite">
+          {progressNote}
+        </Text>
       ) : null}
       {catalogError && !running ? (
         <Alert color="yellow" variant="light" title={catalogError.title}>
@@ -222,7 +256,10 @@ export default function App() {
       <RunSummary
         snapshot={snapshot}
         modelLabel={selectedLabel}
-        onViewAnalysis={() => setAnalysisOpen(true)}
+        onViewAnalysis={() => {
+          cancelAutoOpen();
+          setAnalysisOpen(true);
+        }}
       />
       <RunPanel
         snapshot={snapshot}
@@ -250,7 +287,10 @@ export default function App() {
           data={snapshot.result}
           opportunity={opportunity}
           snapshot={snapshot}
-          onBack={() => setAnalysisOpen(false)}
+          onBack={() => {
+            cancelAutoOpen();
+            setAnalysisOpen(false);
+          }}
           onRunAgain={() => {
             setAnalysisOpen(false);
             void analyze();
@@ -273,10 +313,7 @@ export default function App() {
         <ResizableWorkspace controls={controls} canvas={canvas} inspector={inspector} />
       )}
       <Box className="workspace-footer">
-        <AppFooter
-          mode={executionMode === "unknown" ? "unknown" : executionMode}
-          onHowItWorks={() => setShowHow(true)}
-        />
+        <AppFooter onHowItWorks={() => setShowHow(true)} />
       </Box>
     </Box>
   );

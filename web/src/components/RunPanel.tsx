@@ -1,7 +1,14 @@
-import { Badge, Group, Paper, Tabs, Text } from "@mantine/core";
+import { Badge, Group, Paper, Tabs } from "@mantine/core";
 import type { RunSnapshot, TaskNode } from "../lib/api";
 import { BackendActivity } from "./BackendActivity";
 import { FlowBoard } from "./flow/FlowBoard";
+
+const STATUS_COLOR: Record<string, string> = {
+  queued: "gray",
+  running: "indigo",
+  completed: "green",
+  failed: "red",
+};
 
 export function RunPanel({
   snapshot,
@@ -31,9 +38,9 @@ export function RunPanel({
             </Tabs.Tab>
           </Tabs.List>
           {snapshot?.status && (
-            <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
+            <Badge size="sm" variant="light" color={STATUS_COLOR[snapshot.status] ?? "gray"}>
               {snapshot.status}
-            </Text>
+            </Badge>
           )}
         </Group>
 

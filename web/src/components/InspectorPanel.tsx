@@ -71,7 +71,7 @@ export function InspectorPanel({
               <Text className="workspace-kicker">Top risks</Text>
               {result.risks.slice(0, 3).map((risk, index) => (
                 <Group key={`${risk.signal}-${index}`} gap="sm" align="flex-start" wrap="nowrap">
-                  <Badge circle color="orange" size="sm">{index + 1}</Badge>
+                  <span className="step-num step-num--risk">{index + 1}</span>
                   <Stack gap={1}>
                     <Text size="sm" fw={600}>{risk.signal}</Text>
                     <Text size="xs" c="dimmed">{risk.description}</Text>
@@ -83,7 +83,7 @@ export function InspectorPanel({
               <Text className="workspace-kicker">Next actions</Text>
               {result.recommendations.slice(0, 3).map((action, index) => (
                 <Group key={`${action}-${index}`} gap="sm" align="flex-start" wrap="nowrap">
-                  <Badge circle color="indigo" size="sm">{index + 1}</Badge>
+                  <span className="step-num step-num--action">{index + 1}</span>
                   <Text size="sm">{action}</Text>
                 </Group>
               ))}
