@@ -208,7 +208,9 @@ export default function App() {
       ? "Starting…"
       : `Analyzing… ${completedTasks}/5`
     : `Analyze with ${selectedLabel}`;
-  const progressNote = failedTasks ? `${failedTasks} of 5 tasks failed` : null;
+  const progressNote = `${completedTasks} of 5 tasks complete${
+    failedTasks ? `; ${failedTasks} failed` : ""
+  }`;
 
   const controls = (
     <Stack gap="md" className="control-stack">
@@ -224,7 +226,7 @@ export default function App() {
       <Button
         size="md"
         fullWidth
-        disabled={!canAnalyze && !running}
+        disabled={!canAnalyze}
         aria-busy={running || undefined}
         leftSection={running ? <Loader size="xs" color="var(--button-color)" /> : undefined}
         style={running ? { pointerEvents: "none" } : undefined}
