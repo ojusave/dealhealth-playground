@@ -60,7 +60,7 @@ ${rubric}
 Opportunity signals:
 ${formatOpportunity(input.opportunity)}
 
-Return JSON with dimension "${input.dimension}", score 0-100, 2-3 sentence findings, risks array, and reasoning_steps array.`;
+Return JSON with dimension "${input.dimension}", score 0-100, exactly two concise findings sentences, no more than two distinct risks, and two reasoning steps. Each risk must cite a different supplied signal; write the signal as a short human-readable label, never as a JSON key or field/value pair. Do not restate the same gap in different words.`;
 
   const result = await callModel(
     {

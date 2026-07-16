@@ -1,5 +1,5 @@
 import type { DimensionName } from "./dimensions.js";
-import type { Dashboard, Opportunity } from "./schemas.js";
+import type { BaselineResult, Dashboard, Opportunity } from "./schemas.js";
 
 export interface ProviderKeys {
   openai?: string;
@@ -43,6 +43,13 @@ export interface ProgressEvent {
 
 export type TaskStatus = "queued" | "running" | "completed" | "failed";
 export type RunStatus = TaskStatus;
+export type BaselineStatus = "queued" | "running" | "completed" | "failed";
+
+export interface BaselineSnapshot {
+  status: BaselineStatus;
+  result?: BaselineResult;
+  error?: string;
+}
 
 export interface TaskNodeState {
   dimension: string;
@@ -77,6 +84,7 @@ export interface RunSnapshot {
   renderRootTaskRunId?: string;
   tasks: TaskNodeState[];
   activity: RunActivity[];
+  baseline: BaselineSnapshot;
   result?: Dashboard;
   error?: string;
 }

@@ -6,6 +6,7 @@ export * from "./model-filter.js";
 export * from "./model-registry.js";
 export * from "./provider-client.js";
 export * from "./analyze-dimension.js";
+export * from "./analyze-baseline.js";
 export * from "./aggregate.js";
 export * from "./analyze-opportunity.js";
 export * from "./contracts.js";

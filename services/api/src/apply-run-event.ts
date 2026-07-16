@@ -49,9 +49,11 @@ export function applyRunEvent(
   if (!duplicate) appendActivity(record, event);
 
   if (event.type === "aggregate:completed") {
-    record.status = "completed";
     record.result = event.payload as Dashboard;
-    return { changed: true, becameTerminal: true };
+    const baselineSettled =
+      record.baseline.status === "completed" || record.baseline.status === "failed";
+    record.status = baselineSettled ? "completed" : "running";
+    return { changed: true, becameTerminal: baselineSettled };
   }
 
   if (event.type === "run:failed") {

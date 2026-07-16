@@ -67,5 +67,6 @@ class FakeWorkflowClient implements WorkflowClient {
 function createStore(): RunStore {
   const store = new RunStore();
   store.create({ runId: "run-1", modelId: "model", mode: "workflows" });
+  store.markBaselineFailed("run-1", "not part of this test");
   return store;
 }

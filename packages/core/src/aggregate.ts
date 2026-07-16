@@ -29,19 +29,50 @@ function statusFromScore(score: number): Dashboard["status"] {
   return "Critical";
 }
 
-function dedupeRisks(
-  risks: Dashboard["risks"]
-): Dashboard["risks"] {
+const RISK_THEMES: Array<[string, RegExp]> = [
+  ["budget", /\bbudget\b|\bfunding\b|\bpricing\b|\bprice\b/i],
+  ["mutual-plan", /mutual action plan|\bmap\b|dated milestones?/i],
+  ["executive-alignment", /executive|exec sponsor|economic buyer/i],
+  ["security", /security|questionnaire|compliance/i],
+  ["pilot", /\bpilot\b|validation outcome|success criteria/i],
+  ["momentum", /last touch|activity level|silence|cadence|stalled|rescheduled/i],
+  ["single-thread", /single[- ]thread|single champion|stakeholder coverage/i],
+  ["competition", /competitor|competitive/i],
+];
+
+export function riskThemeKey(risk: { signal: string; description: string }): string {
+  const text = `${risk.signal} ${risk.description}`;
+  const named = RISK_THEMES.find(([, pattern]) => pattern.test(text));
+  if (named) return named[0];
+  return risk.signal
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 3)
+    .slice(0, 5)
+    .join("-");
+}
+
+export function selectTopRisks(risks: Dashboard["risks"]): Dashboard["risks"] {
   const seen = new Set<string>();
   const order = { Critical: 0, High: 1, Medium: 2 } as const;
-  return risks
+  return [...risks]
+    .sort((a, b) => order[a.severity] - order[b.severity])
     .filter((r) => {
-      const key = `${r.signal.toLowerCase()}|${r.dimension}`;
+      const key = riskThemeKey(r);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     })
-    .sort((a, b) => order[a.severity] - order[b.severity]);
+    .slice(0, 3);
+}
+
+export function workflowOnlyRisks(
+  workflowRisks: Dashboard["risks"],
+  baselineRisks: Array<{ signal: string; description: string }>
+): Dashboard["risks"] {
+  const baselineThemes = new Set(baselineRisks.map(riskThemeKey));
+  return workflowRisks.filter((risk) => !baselineThemes.has(riskThemeKey(risk)));
 }
 
 /** Fan-in dimension outputs into the final dashboard JSON. */
@@ -85,7 +116,7 @@ export async function aggregateResults(input: AggregateInput): Promise<Dashboard
     });
   }
 
-  const mergedRisks = dedupeRisks(
+  const mergedRisks = selectTopRisks(
     successes.flatMap((s) =>
       s.risks.map((r) => ({
         severity: r.severity,
@@ -100,7 +131,7 @@ export async function aggregateResults(input: AggregateInput): Promise<Dashboard
     {
       modelId: input.modelId,
       system:
-        "You are a senior revenue operations analyst writing an executive deal health summary. Ground every claim in the dimension outputs provided.",
+        "You are a decisive senior revenue operations analyst. Ground every claim in the supplied evidence. Remove repetition, avoid consultant language, and write for a sales leader who needs to act now.",
       user: `Company: ${input.opportunity.company}
 Stage: ${input.opportunity.stage}
 ARR: $${input.opportunity.arr}
@@ -108,7 +139,11 @@ ARR: $${input.opportunity.arr}
 Dimension analyses:
 ${JSON.stringify(successes, null, 2)}
 
-Write a 3-4 sentence summary contrasting narrative strength vs execution gaps, plus 3-5 concrete next actions and three context cards (deal_context, decision_path, validation_scope).`,
+Write a two-sentence verdict under 60 words. Sentence one states the deal truth. Sentence two states what must happen next.
+
+Return exactly three prioritized actions. Each action must start with a concrete verb, name the evidence-backed gap it resolves, and avoid repeating another action.
+
+Also return three concise context cards (deal_context, decision_path, validation_scope).`,
       schema: SYNTHESIS_JSON_SCHEMA,
       schemaName: "synthesis_result",
       maxTokens: 800,

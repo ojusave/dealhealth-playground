@@ -48,6 +48,7 @@ function makeRecord(): RunRecord {
       attempt: 1,
     })),
     activity: [],
+    baseline: { status: "completed", result: {} as never },
     listeners: new Set(),
   };
 }

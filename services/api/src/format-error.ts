@@ -36,6 +36,9 @@ export function formatRenderSdkError(err: unknown): string {
       return err.statusCode ? `HTTP ${err.statusCode}: ${detail}` : detail;
     }
     if (err.message.includes("[object Object]")) {
+      if (err.statusCode === 401) {
+        return "Unauthorized. RENDER_API_KEY on dealhealth-api is invalid or revoked.";
+      }
       return err.statusCode === 404
         ? "Workflow task not found. Set WORKFLOW_TASK_SLUG to your deployed task (e.g. dealhealth-workflows/analyzeOpportunity)."
         : "Render Workflows API rejected the request. Check WORKFLOW_TASK_SLUG and that dealhealth-workflows is deployed.";

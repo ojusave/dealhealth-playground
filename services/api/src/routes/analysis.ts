@@ -6,6 +6,7 @@ import {
   type TaskContext,
 } from "@dealhealth/core";
 import type { ApiConfig } from "../config.js";
+import { runSingleCallBaseline } from "../executor/baseline.js";
 import { runSimulatedAnalysis } from "../executor/simulated.js";
 import { triggerWorkflowRun } from "../executor/workflows.js";
 import type { RateLimiter } from "../rate-limit.js";
@@ -77,6 +78,7 @@ export function registerAnalysisRoutes(
     };
 
     store.create({ runId, modelId: parsed.data.modelId, mode: config.executionMode });
+    void runSingleCallBaseline(store, runId, taskContext, model.label);
 
     if (config.executionMode === "workflows") {
       if (!workflowClient || !reconciler) {

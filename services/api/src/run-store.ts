@@ -1,4 +1,9 @@
-import { DIMENSIONS, type ExecutionMode, type ProgressEvent } from "@dealhealth/core";
+import {
+  DIMENSIONS,
+  type BaselineResult,
+  type ExecutionMode,
+  type ProgressEvent,
+} from "@dealhealth/core";
 import { applyRunEvent } from "./apply-run-event.js";
 import type { RunRecord, RunSnapshot, TaskMetadata } from "./run-types.js";
 
@@ -38,6 +43,7 @@ export class RunStore {
         attempt: 1,
       })),
       activity: [],
+      baseline: { status: "queued" },
       listeners: new Set(),
     };
     this.runs.set(input.runId, record);
@@ -62,6 +68,7 @@ export class RunStore {
       renderRootTaskRunId: record.renderRootTaskRunId,
       tasks: record.tasks,
       activity: record.activity,
+      baseline: record.baseline,
       result: record.result,
       error: record.error,
     };
@@ -104,6 +111,39 @@ export class RunStore {
       attempt: 1,
       message,
     });
+  }
+
+  markBaselineRunning(runId: string): void {
+    const record = this.runs.get(runId);
+    if (!record || record.status === "completed" || record.status === "failed") return;
+    record.baseline = { status: "running" };
+    record.updatedAt = new Date().toISOString();
+    this.notify(record);
+  }
+
+  setBaselineResult(runId: string, result: BaselineResult): void {
+    this.setBaselineTerminal(runId, { status: "completed", result });
+  }
+
+  markBaselineFailed(runId: string, error: string): void {
+    this.setBaselineTerminal(runId, { status: "failed", error });
+  }
+
+  private setBaselineTerminal(
+    runId: string,
+    baseline: RunRecord["baseline"]
+  ): void {
+    const record = this.runs.get(runId);
+    if (!record || record.status === "completed" || record.status === "failed") return;
+    record.baseline = baseline;
+    const now = new Date().toISOString();
+    record.updatedAt = now;
+    record.lastEventAt = now;
+    if (record.result) {
+      record.status = "completed";
+      this.activeCount = Math.max(0, this.activeCount - 1);
+    }
+    this.notify(record);
   }
 
   setRootTaskRunId(runId: string, taskRunId: string): void {

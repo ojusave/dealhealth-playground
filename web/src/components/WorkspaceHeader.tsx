@@ -12,7 +12,11 @@ import {
 import { DEPLOY_URL, GITHUB_URL } from "../constants";
 import { renderSignupUrlWithUtms } from "../lib/renderSignup";
 
-export function WorkspaceHeader() {
+export function WorkspaceHeader({
+  showConversionActions = true,
+}: {
+  showConversionActions?: boolean;
+}) {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
 
@@ -25,9 +29,11 @@ export function WorkspaceHeader() {
             Deal Review
           </Text>
         </Group>
-        <Text className="workspace-kicker" visibleFrom="lg">
-          Run Explorer
-        </Text>
+        {showConversionActions ? (
+          <Text className="workspace-kicker" visibleFrom="lg">
+            Run Explorer
+          </Text>
+        ) : null}
         <Group gap="sm" wrap="nowrap">
           <Anchor
             className="workspace-header-link"
@@ -47,24 +53,28 @@ export function WorkspaceHeader() {
               GitHub
             </Text>
           </Anchor>
-          <Anchor
-            className="workspace-header-link"
-            href={renderSignupUrlWithUtms("header_link")}
-            target="_blank"
-            rel="noreferrer"
-            visibleFrom="xs"
-          >
-            Sign up
-          </Anchor>
-          <Button
-            component="a"
-            href={DEPLOY_URL}
-            target="_blank"
-            rel="noreferrer"
-            size="xs"
-          >
-            Deploy to Render
-          </Button>
+          {showConversionActions ? (
+            <>
+              <Anchor
+                className="workspace-header-link"
+                href={renderSignupUrlWithUtms("header_link")}
+                target="_blank"
+                rel="noreferrer"
+                visibleFrom="xs"
+              >
+                Sign up
+              </Anchor>
+              <Button
+                component="a"
+                href={DEPLOY_URL}
+                target="_blank"
+                rel="noreferrer"
+                size="xs"
+              >
+                Deploy to Render
+              </Button>
+            </>
+          ) : null}
           <Tooltip label={dark ? "Use light theme" : "Use dark theme"}>
             <ActionIcon
               variant="subtle"

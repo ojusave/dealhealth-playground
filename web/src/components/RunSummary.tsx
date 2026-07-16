@@ -140,7 +140,13 @@ export function RunSummary({
       <Stack gap={2} className="run-summary-cell" justify="center">
         <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Model</Text>
         <Text size="sm" fw={600} lineClamp={1}>{modelLabel}</Text>
-        <Text size="xs" c="dimmed">{snapshot?.mode ?? "Ready"}</Text>
+        <Text size="xs" c="dimmed">
+          {snapshot?.mode === "workflows"
+            ? "Render Workflows"
+            : snapshot?.mode === "simulated"
+              ? "Local parallel run"
+              : "Ready"}
+        </Text>
       </Stack>
     </SimpleGrid>
   );

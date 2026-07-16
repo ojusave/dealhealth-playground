@@ -38,9 +38,10 @@ export async function triggerWorkflowRun(
     reconciler.track(runId, started.taskRunId);
   } catch (err) {
     const detail = formatRenderSdkError(err);
-    store.markFailed(
-      runId,
-      `Could not start workflow: ${detail}. Verify WORKFLOW_TASK_SLUG and that dealhealth-workflows is deployed.`
-    );
+    const hint = /HTTP 401|Unauthorized/i.test(detail)
+      ? "RENDER_API_KEY on dealhealth-api is missing, revoked, or not authorized for this workspace. Create a new API key in the Dashboard and update the env var."
+      : "Verify WORKFLOW_TASK_SLUG and that dealhealth-workflows is deployed.";
+    console.error(`[workflows] startTask failed for ${runId}: ${detail}`);
+    store.markFailed(runId, `Could not start workflow: ${detail}. ${hint}`);
   }
 }

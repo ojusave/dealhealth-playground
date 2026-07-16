@@ -81,7 +81,11 @@ export function ModelPicker({
   );
 
   const providerKeys = groups.map(([key]) => key);
-  const [provider, setProvider] = useState(providerKeys[0] ?? "openai");
+  const initialProvider =
+    groups.find(([, group]) => group.models.some((model) => model.id === value))?.[0] ??
+    providerKeys[0] ??
+    "openai";
+  const [provider, setProvider] = useState(initialProvider);
 
   useEffect(() => {
     if (providerKeys.length && !providerKeys.includes(provider)) {

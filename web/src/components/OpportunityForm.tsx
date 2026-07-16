@@ -71,6 +71,7 @@ export function OpportunityForm({
         </Group>
 
         <Select
+          label="Sample deal"
           data={samples.map((s) => ({ value: s.id ?? s.company, label: s.company }))}
           value={value.id ?? value.company}
           onChange={(id) => {
@@ -80,7 +81,7 @@ export function OpportunityForm({
         />
 
         {!editorOpen && (
-          <Group gap="xs">
+          <Group gap="xs" className="deal-summary-badges">
             <Badge variant="light" color="indigo">
               {value.stage}
             </Badge>
