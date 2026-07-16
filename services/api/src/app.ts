@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { ModelRegistry } from "@dealhealth/core";
 import type { ApiConfig } from "./config.js";
 import { RateLimiter } from "./rate-limit.js";
@@ -46,6 +47,12 @@ export function createApp(config: ApiConfig) {
   });
   registerRunRoutes(app, store);
   registerEventRoutes(app, store, config.eventsSecret);
+
+  if (config.serveWeb) {
+    const webRoot = config.webRoot ?? "web/dist";
+    app.use("/*", serveStatic({ root: webRoot }));
+    app.get("*", serveStatic({ root: webRoot, path: "index.html" }));
+  }
 
   return app;
 }

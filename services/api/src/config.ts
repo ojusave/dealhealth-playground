@@ -6,6 +6,8 @@ export interface ApiConfig {
   allowedOrigin: string;
   apiBaseUrl: string;
   workflowTaskSlug: string;
+  serveWeb?: boolean;
+  webRoot?: string;
   renderApiKey?: string;
   keys: {
     openai?: string;
@@ -24,6 +26,8 @@ export function loadConfig(): ApiConfig {
     allowedOrigin: process.env.ALLOWED_ORIGIN ?? "http://localhost:5173",
     apiBaseUrl: process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? "3001"}`,
     workflowTaskSlug: process.env.WORKFLOW_TASK_SLUG ?? "dealhealth-workflows/analyzeOpportunity",
+    serveWeb: process.env.SERVE_WEB === "true",
+    webRoot: process.env.WEB_ROOT ?? "web/dist",
     renderApiKey: process.env.RENDER_API_KEY,
     keys: {
       openai: process.env.OPENAI_API_KEY,
