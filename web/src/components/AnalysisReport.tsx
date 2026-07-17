@@ -7,12 +7,13 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  Title,
   UnstyledButton,
 } from "@mantine/core";
 import type { Dashboard, Opportunity, RunSnapshot } from "../lib/api";
+import { displayRiskSignal, uniqueRiskThemes } from "../lib/risk-presentation";
 import { ExecutionTrace } from "./ExecutionTrace";
 import { FlowBoard } from "./flow/FlowBoard";
+import { ResultComparison } from "./ResultComparison";
 
 type Tone = "green" | "yellow" | "red";
 
@@ -39,19 +40,6 @@ function formatArr(value: number): string {
 
 function formatSeconds(ms: number | undefined): string {
   return ms == null ? "—" : `${(ms / 1000).toFixed(1)}s`;
-}
-
-function HeroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="analysis-hero-stat">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
-        {label}
-      </Text>
-      <Text size="sm" fw={600} lineClamp={1}>
-        {value}
-      </Text>
-    </div>
-  );
 }
 
 function ContextCard({
@@ -107,6 +95,7 @@ export function AnalysisReport({
 
   const dimension = data.dimensions.find((item) => item.name === activeDimension);
   const task = snapshot.tasks.find((item) => item.dimension === activeDimension);
+  const topRisks = uniqueRiskThemes(data.risks);
 
   const selectDimension = useCallback((name: string) => {
     if (!name) return;
@@ -120,19 +109,28 @@ export function AnalysisReport({
     });
   }, []);
 
-  const tone = scoreTone(data.overall_score);
-  const totalTasks = snapshot.tasks.length || data.dimensions.length;
-  const completedTasks = snapshot.tasks.filter((item) => item.status === "completed").length;
-
   return (
     <Box className="analysis-report">
       <Group className="analysis-toolbar" justify="space-between" wrap="nowrap" gap="md">
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-          <Button variant="subtle" color="gray" size="compact-sm" onClick={onBack}>
-            ← Run Explorer
+          <Button
+            className="analysis-back-button"
+            variant="subtle"
+            color="gray"
+            size="compact-sm"
+            onClick={onBack}
+          >
+            <span className="analysis-back-label">← Run Explorer</span>
+            <span className="analysis-back-label-mobile">← Back</span>
           </Button>
           <span className="analysis-toolbar-divider" aria-hidden />
-          <Text size="sm" fw={600} lineClamp={1} style={{ minWidth: 0 }}>
+          <Text
+            className="analysis-toolbar-company"
+            size="sm"
+            fw={600}
+            lineClamp={1}
+            style={{ minWidth: 0 }}
+          >
             {opportunity.company}
           </Text>
           <Text size="sm" c="dimmed" visibleFrom="sm" style={{ whiteSpace: "nowrap" }}>
@@ -164,52 +162,11 @@ export function AnalysisReport({
               </div>
             ) : null}
 
-            <section className="dh-panel analysis-panel analysis-section analysis-hero">
-              <div className="analysis-hero-main">
-                <div className="analysis-hero-copy">
-                  <Title order={1} size="h2">
-                    {opportunity.company}
-                  </Title>
-                  <Group gap={8} mt={4} wrap="wrap">
-                    <Text size="sm" c="dimmed">
-                      {opportunity.stage}
-                    </Text>
-                    <span className="analysis-meta-dot" aria-hidden />
-                    <Text size="sm" c="dimmed">
-                      {formatArr(opportunity.arr)} ARR
-                    </Text>
-                    <span className="analysis-meta-dot" aria-hidden />
-                    <Text size="sm" c="dimmed">
-                      Close {opportunity.expectedCloseDate}
-                    </Text>
-                  </Group>
-                  <Text className="dh-section-title" mt="md">
-                    Executive synthesis
-                  </Text>
-                  <Title order={2} className="analysis-headline" mt={6}>
-                    {data.summary}
-                  </Title>
-                </div>
-                <div className="analysis-hero-score">
-                  <Text className="dh-section-title">Overall score</Text>
-                  <Text component="p" className={`analysis-score analysis-score--${tone}`}>
-                    {data.overall_score}
-                  </Text>
-                  <Badge color={tone} variant="light">
-                    {data.status}
-                  </Badge>
-                </div>
-              </div>
-              <div className="analysis-hero-stats">
-                <HeroStat label="Model" value={data.meta.modelLabel} />
-                <HeroStat
-                  label="Execution"
-                  value={data.meta.mode === "workflows" ? "Render Workflows" : "Simulated"}
-                />
-                <HeroStat label="Duration" value={formatSeconds(data.meta.durationMs)} />
-                <HeroStat label="Dimensions" value={`${completedTasks}/${totalTasks} completed`} />
-              </div>
-            </section>
+            <ResultComparison
+              workflow={data}
+              snapshot={snapshot}
+              opportunity={opportunity}
+            />
 
             <section className="dh-panel analysis-panel analysis-section analysis-flow">
               <Group justify="space-between" align="center" mb="sm">
@@ -334,13 +291,13 @@ export function AnalysisReport({
                 <Text className="dh-section-title" mb="xs">
                   Top risks
                 </Text>
-                {data.risks.length === 0 ? (
+                {topRisks.length === 0 ? (
                   <Text size="sm" c="dimmed">
                     No material risks surfaced.
                   </Text>
                 ) : (
                   <div className="analysis-list">
-                    {data.risks.slice(0, 5).map((risk, index) => (
+                    {topRisks.map((risk, index) => (
                       <div
                         key={`${risk.dimension}-${risk.signal}-${index}`}
                         className="analysis-list-row"
@@ -351,7 +308,7 @@ export function AnalysisReport({
                         <div className="analysis-list-body">
                           <Group justify="space-between" gap="xs" wrap="nowrap" align="flex-start">
                             <Text size="sm" fw={600} lh={1.35}>
-                              {risk.signal}
+                              {displayRiskSignal(risk.signal)}
                             </Text>
                             <Badge size="xs" variant="light" color={severityColor(risk.severity)}>
                               {risk.severity}
@@ -376,7 +333,7 @@ export function AnalysisReport({
                   </Text>
                 ) : (
                   <div className="analysis-list">
-                    {data.recommendations.slice(0, 5).map((item, index) => (
+                    {data.recommendations.slice(0, 3).map((item, index) => (
                       <div key={item} className="analysis-list-row">
                         <span className="step-num step-num--action">
                           {index + 1}

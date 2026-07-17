@@ -54,7 +54,7 @@ export const dimensionResultSchema = z.object({
       signal: z.string(),
       description: z.string(),
     })
-  ),
+  ).max(2),
   reasoning_steps: z.array(z.string()),
 });
 
@@ -104,6 +104,31 @@ export const dashboardSchema = z.object({
 
 export type Dashboard = z.infer<typeof dashboardSchema>;
 
+export const baselineRiskSchema = z.object({
+  severity: severitySchema,
+  signal: z.string(),
+  description: z.string(),
+});
+
+export const baselineContentSchema = z.object({
+  summary: z.string(),
+  risks: z.array(baselineRiskSchema).min(1).max(3),
+  recommendations: z.array(z.string()).length(3),
+});
+
+export type BaselineContent = z.infer<typeof baselineContentSchema>;
+
+export const baselineResultSchema = baselineContentSchema.extend({
+  meta: z.object({
+    modelId: z.string(),
+    modelLabel: z.string(),
+    provider: z.string(),
+    durationMs: z.number(),
+  }),
+});
+
+export type BaselineResult = z.infer<typeof baselineResultSchema>;
+
 export const analyzeRequestSchema = z.object({
   opportunity: opportunitySchema,
   modelId: z.string().min(1),
@@ -113,7 +138,7 @@ export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>;
 
 export const synthesisResultSchema = z.object({
   summary: z.string(),
-  recommendations: z.array(z.string()).min(1),
+  recommendations: z.array(z.string()).length(3),
   context: z.object({
     deal_context: z.string(),
     decision_path: z.string(),
@@ -132,6 +157,7 @@ export const DIMENSION_JSON_SCHEMA = {
     findings: { type: "string" },
     risks: {
       type: "array",
+      maxItems: 2,
       items: {
         type: "object",
         additionalProperties: false,
@@ -153,7 +179,12 @@ export const SYNTHESIS_JSON_SCHEMA = {
   additionalProperties: false,
   properties: {
     summary: { type: "string" },
-    recommendations: { type: "array", items: { type: "string" } },
+    recommendations: {
+      type: "array",
+      items: { type: "string" },
+      minItems: 3,
+      maxItems: 3,
+    },
     context: {
       type: "object",
       additionalProperties: false,
@@ -166,4 +197,34 @@ export const SYNTHESIS_JSON_SCHEMA = {
     },
   },
   required: ["summary", "recommendations", "context"],
+} as const;
+
+export const BASELINE_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    summary: { type: "string" },
+    risks: {
+      type: "array",
+      minItems: 1,
+      maxItems: 3,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          severity: { type: "string", enum: ["Critical", "High", "Medium"] },
+          signal: { type: "string" },
+          description: { type: "string" },
+        },
+        required: ["severity", "signal", "description"],
+      },
+    },
+    recommendations: {
+      type: "array",
+      items: { type: "string" },
+      minItems: 3,
+      maxItems: 3,
+    },
+  },
+  required: ["summary", "risks", "recommendations"],
 } as const;

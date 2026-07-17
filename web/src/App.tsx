@@ -18,6 +18,7 @@ import { notifyError, notifyRateLimit } from "./lib/notify";
 import { AnalysisReport } from "./components/AnalysisReport";
 import { AppFooter } from "./components/AppFooter";
 import { ExecutionTrace } from "./components/ExecutionTrace";
+import { FirstRunSetup } from "./components/FirstRunSetup";
 import { HowItWorksModal } from "./components/HowItWorksModal";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LoadingSkeleton } from "./components/LoadingSkeleton";
@@ -27,6 +28,7 @@ import { ResizableWorkspace } from "./components/ResizableWorkspace";
 import { RunPanel } from "./components/RunPanel";
 import { RunSummary } from "./components/RunSummary";
 import { WorkspaceHeader } from "./components/WorkspaceHeader";
+import { WorkflowNarrative } from "./components/WorkflowNarrative";
 
 /** Pause after a live run completes so the canvas can flip green before the report opens. */
 const COMPLETION_BEAT_MS = 900;
@@ -35,6 +37,7 @@ export default function App() {
   const [models, setModels] = useState<ModelsResponse | null>(null);
   const [catalogError, setCatalogError] = useState<AppError | null>(null);
   const [rateLimitAlert, setRateLimitAlert] = useState<AppError | null>(null);
+  const [runStartError, setRunStartError] = useState<AppError | null>(null);
   const [samples, setSamples] = useState<Opportunity[]>([]);
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [snapshot, setSnapshot] = useState<RunSnapshot | null>(null);
@@ -45,6 +48,7 @@ export default function App() {
   const [showHow, setShowHow] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [samplesLoading, setSamplesLoading] = useState(true);
   const notifiedRunError = useRef<string | null>(null);
   const stopSubscription = useRef<(() => void) | null>(null);
   const autoOpenTimer = useRef<number | null>(null);
@@ -119,12 +123,14 @@ export default function App() {
               };
         setCatalogError(error);
         notifyError(error);
-      });
+      })
+      .finally(() => setSamplesLoading(false));
   }, []);
 
   const analyze = useCallback(async () => {
     if (!canAnalyze || !opportunity) return;
     setRateLimitAlert(null);
+    setRunStartError(null);
     setDispatching(true);
     setRunning(true);
     setAnalysisOpen(false);
@@ -168,6 +174,7 @@ export default function App() {
           }
           setRunning(false);
           setDispatching(false);
+          setRunStartError(err);
         }
       );
     } catch (err) {
@@ -187,6 +194,7 @@ export default function App() {
         });
         notifyRateLimit(error.message, error.hint);
       } else {
+        setRunStartError(error);
         notifyError(error);
       }
       setRunning(false);
@@ -206,8 +214,10 @@ export default function App() {
   const analyzeLabel = running
     ? dispatching
       ? "Starting…"
-      : `Analyzing… ${completedTasks}/5`
-    : `Analyze with ${selectedLabel}`;
+      : `Comparing… ${completedTasks}/5`
+    : snapshot
+      ? "Compare again"
+      : "Compare approaches";
   const progressNote = `${completedTasks} of 5 tasks complete${
     failedTasks ? `; ${failedTasks} failed` : ""
   }`;
@@ -250,11 +260,22 @@ export default function App() {
           {rateLimitAlert.hint ? <Text size="sm" mt="xs" c="dimmed">{rateLimitAlert.hint}</Text> : null}
         </Alert>
       ) : null}
+      {runStartError && !snapshot ? (
+        <Alert color="red" variant="light" title={runStartError.title}>
+          {runStartError.message}
+        </Alert>
+      ) : null}
     </Stack>
   );
 
   const canvas = (
     <Stack gap="md" className="canvas-stack">
+      <WorkflowNarrative
+        snapshot={snapshot}
+        dispatching={dispatching}
+        onRetry={() => void analyze()}
+        retryDisabled={!canAnalyze}
+      />
       <RunSummary
         snapshot={snapshot}
         modelLabel={selectedLabel}
@@ -280,9 +301,11 @@ export default function App() {
     />
   );
 
+  const hasRun = Boolean(snapshot || running || dispatching);
+
   return (
     <Box className="workspace-page">
-      <WorkspaceHeader />
+      <WorkspaceHeader showConversionActions={hasRun || analysisOpen} />
       <HowItWorksModal opened={showHow} onClose={() => setShowHow(false)} />
       {analysisOpen && snapshot?.result && opportunity ? (
         <AnalysisReport
@@ -298,8 +321,34 @@ export default function App() {
             void analyze();
           }}
         />
-      ) : initialLoading && !models ? (
+      ) : (initialLoading || samplesLoading) && (!models || !opportunity) ? (
         <Box p="md"><LoadingSkeleton /></Box>
+      ) : !hasRun && opportunity ? (
+        <FirstRunSetup
+          samples={samples}
+          opportunity={opportunity}
+          onOpportunityChange={setOpportunity}
+          models={models}
+          modelId={modelId}
+          onModelChange={setModelId}
+          canReview={canAnalyze}
+          onReview={() => void analyze()}
+          catalogError={catalogError}
+          runError={runStartError}
+          rateLimitAlert={rateLimitAlert}
+        />
+      ) : !hasRun ? (
+        <Box component="main" className="first-run-shell" p="xl">
+          <Alert
+            color="yellow"
+            variant="light"
+            title={catalogError?.title ?? "Could not load a sample deal"}
+            maw={620}
+            mx="auto"
+          >
+            {catalogError?.message ?? "Refresh the page to try again."}
+          </Alert>
+        </Box>
       ) : mobile ? (
         <Tabs defaultValue="canvas" className="mobile-workspace">
           <Tabs.List grow>
