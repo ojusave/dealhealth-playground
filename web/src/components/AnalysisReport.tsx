@@ -10,6 +10,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import type { Dashboard, Opportunity, RunSnapshot } from "../lib/api";
+import { displayRiskSignal, uniqueRiskThemes } from "../lib/risk-presentation";
 import { ExecutionTrace } from "./ExecutionTrace";
 import { FlowBoard } from "./flow/FlowBoard";
 import { ResultComparison } from "./ResultComparison";
@@ -94,6 +95,7 @@ export function AnalysisReport({
 
   const dimension = data.dimensions.find((item) => item.name === activeDimension);
   const task = snapshot.tasks.find((item) => item.dimension === activeDimension);
+  const topRisks = uniqueRiskThemes(data.risks);
 
   const selectDimension = useCallback((name: string) => {
     if (!name) return;
@@ -289,13 +291,13 @@ export function AnalysisReport({
                 <Text className="dh-section-title" mb="xs">
                   Top risks
                 </Text>
-                {data.risks.length === 0 ? (
+                {topRisks.length === 0 ? (
                   <Text size="sm" c="dimmed">
                     No material risks surfaced.
                   </Text>
                 ) : (
                   <div className="analysis-list">
-                    {data.risks.slice(0, 3).map((risk, index) => (
+                    {topRisks.map((risk, index) => (
                       <div
                         key={`${risk.dimension}-${risk.signal}-${index}`}
                         className="analysis-list-row"
@@ -306,7 +308,7 @@ export function AnalysisReport({
                         <div className="analysis-list-body">
                           <Group justify="space-between" gap="xs" wrap="nowrap" align="flex-start">
                             <Text size="sm" fw={600} lh={1.35}>
-                              {risk.signal}
+                              {displayRiskSignal(risk.signal)}
                             </Text>
                             <Badge size="xs" variant="light" color={severityColor(risk.severity)}>
                               {risk.severity}

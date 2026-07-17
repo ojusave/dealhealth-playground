@@ -1,6 +1,7 @@
 import { Alert, Badge, Group, SimpleGrid, Stack, Text, Title } from "@mantine/core";
 import { workflowOnlyRisks, type Dashboard, type Opportunity } from "@dealhealth/core";
 import type { RunSnapshot } from "../lib/api";
+import { displayRiskSignal, uniqueRiskThemes } from "../lib/risk-presentation";
 
 function formatArr(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -15,27 +16,6 @@ function formatSeconds(ms: number | undefined): string {
   return ms == null ? "—" : `${(ms / 1000).toFixed(1)}s`;
 }
 
-function displaySignal(signal: string): string {
-  const normalized = signal.toLowerCase();
-  if (/budget/.test(normalized) && /false|unconfirmed|no confirmed/.test(normalized)) {
-    return "Budget unconfirmed";
-  }
-  if (/mutual.?action.?plan|\bmap\b/.test(normalized) && /false|missing|no /.test(normalized)) {
-    return "Mutual action plan missing";
-  }
-  if (/exec.*sponsor/.test(normalized) && /false|not engaged|missing/.test(normalized)) {
-    return "Executive sponsor not engaged";
-  }
-  const days = signal.match(/(?:daysSinceLastTouch|days_since_last_touch)\s*:\s*(\d+)/i);
-  if (days) return `${days[1]} days since last touch`;
-  return signal
-    .split(";")[0]
-    .replace(/[_-]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function SignalList({
   signals,
 }: {
@@ -43,10 +23,10 @@ function SignalList({
 }) {
   return (
     <ul className="comparison-signals">
-      {signals.slice(0, 3).map((risk, index) => (
+      {uniqueRiskThemes(signals).map((risk, index) => (
         <li key={`${risk.signal}-${index}`}>
           <Text size="sm" fw={600} lh={1.35}>
-            {displaySignal(risk.signal)}
+            {displayRiskSignal(risk.signal)}
           </Text>
           <Text size="xs" c="dimmed" lh={1.45}>
             {risk.description}
@@ -68,7 +48,7 @@ export function ResultComparison({
 }) {
   const baseline = snapshot.baseline;
   const additional = baseline.result
-    ? workflowOnlyRisks(workflow.risks, baseline.result.risks)
+    ? uniqueRiskThemes(workflowOnlyRisks(workflow.risks, baseline.result.risks))
     : [];
 
   return (
@@ -183,7 +163,7 @@ export function ResultComparison({
               {additional.map((risk) => (
                 <li key={`${risk.dimension}-${risk.signal}`}>
                   <Text size="sm" fw={650}>
-                    {displaySignal(risk.signal)}
+                    {displayRiskSignal(risk.signal)}
                   </Text>
                   <Text size="xs" c="dimmed">
                     {risk.dimension}

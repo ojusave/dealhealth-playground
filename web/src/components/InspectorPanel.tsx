@@ -1,5 +1,6 @@
 import { Badge, Divider, Group, List, Stack, Text } from "@mantine/core";
 import type { RunSnapshot, TaskNode } from "../lib/api";
+import { displayRiskSignal, uniqueRiskThemes } from "../lib/risk-presentation";
 
 function statusColor(status?: string): string {
   if (status === "completed") return "green";
@@ -18,6 +19,7 @@ export function InspectorPanel({
   snapshot: RunSnapshot | null;
 }) {
   const result = snapshot?.result;
+  const topRisks = result ? uniqueRiskThemes(result.risks) : [];
 
   return (
     <Stack gap="lg" p="md">
@@ -69,11 +71,11 @@ export function InspectorPanel({
             <Divider />
             <Stack gap="sm">
               <Text className="workspace-kicker">Top risks</Text>
-              {result.risks.slice(0, 3).map((risk, index) => (
+              {topRisks.map((risk, index) => (
                 <Group key={`${risk.signal}-${index}`} gap="sm" align="flex-start" wrap="nowrap">
                   <span className="step-num step-num--risk">{index + 1}</span>
                   <Stack gap={1}>
-                    <Text size="sm" fw={600}>{risk.signal}</Text>
+                    <Text size="sm" fw={600}>{displayRiskSignal(risk.signal)}</Text>
                     <Text size="xs" c="dimmed">{risk.description}</Text>
                   </Stack>
                 </Group>
